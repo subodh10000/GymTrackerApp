@@ -30,7 +30,7 @@ struct Workout: Identifiable, Codable {
 
 struct UserProfile: Codable {
     var name: String
-    var age: Int = 22
+    var age: Int = 23
     var weight: Int = 145
     var height: String = "5'7\""
     var goal: String = "Lean, strong legs, visible abs"

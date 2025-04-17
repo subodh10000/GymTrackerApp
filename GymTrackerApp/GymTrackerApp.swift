@@ -1,6 +1,7 @@
 import SwiftUI
 
 @main
+
 struct GymTrackerApp: App {
     @StateObject private var userManager = UserManager()
     
@@ -20,19 +21,20 @@ struct GymTrackerApp: App {
 // UserManager remains unchanged
 
 // MARK: - Theme
+
 struct AppTheme {
     static let primaryGradient = LinearGradient(
         gradient: Gradient(colors: [Color(hex: "4776E6"), Color(hex: "8E54E9")]),
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
-    
+
     static let secondaryGradient = LinearGradient(
         gradient: Gradient(colors: [Color(hex: "16BFFD"), Color(hex: "CB3066")]),
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
-    
+
     static let primaryColor = Color(hex: "5E60CE")
     static let secondaryColor = Color(hex: "64DFDF")
     static let accentColor = Color(hex: "FF5A5F")
@@ -49,11 +51,11 @@ extension Color {
         Scanner(string: hex).scanHexInt64(&int)
         let a, r, g, b: UInt64
         switch hex.count {
-        case 3: // RGB (12-bit)
+        case 3:
             (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
+        case 6:
             (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
+        case 8:
             (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
         default:
             (a, r, g, b) = (1, 1, 1, 0)
@@ -67,6 +69,7 @@ extension Color {
         )
     }
 }
+
 
 // MARK: - Views
 
@@ -225,6 +228,13 @@ struct MainTabView: View {
 
 struct HomeView: View {
     @EnvironmentObject var userManager: UserManager
+    @State private var animateGlow = false
+    @State private var tappedWorkout = false
+    @State private var tappedExercise = false
+    @State private var showWaterConfetti = false
+    @State private var showFireBurst = false
+
+
     
     var body: some View {
         NavigationView {
@@ -282,9 +292,7 @@ struct HomeView: View {
                                                 .font(.headline)
                                                 .foregroundColor(.white)
                                             
-                                            Text("\(workout.exercises.count) exercises • Tap to start")
-                                                .font(.subheadline)
-                                                .foregroundColor(.white.opacity(0.85))
+                                            
                                         }
                                         
                                         Spacer()
@@ -325,13 +333,15 @@ struct HomeView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
                     
                     // Weekly progress
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("Weekly Progress")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(AppTheme.textPrimaryColor)
-                        
-                        HStack(spacing: 15) {
+                    HStack(spacing: 15) {
+                        // Workouts Card with Animated Purple Glow + Water Confetti
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.purple.opacity(0.5), lineWidth: 3)
+                                .scaleEffect(animateGlow ? 1.03 : 1.0)
+                                .shadow(color: Color.purple.opacity(animateGlow ? 0.7 : 0.3), radius: 12, x: 0, y: 4)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateGlow)
+
                             ProgressCard(
                                 progress: Double(completedWorkouts()) / Double(userManager.workouts.count),
                                 value: "\(completedWorkouts())",
@@ -339,7 +349,36 @@ struct HomeView: View {
                                 label: "Workouts",
                                 color: AppTheme.primaryColor
                             )
-                            
+                            .scaleEffect(tappedWorkout ? 0.97 : 1.0)
+                            .onTapGesture {
+                                tappedWorkout = true
+                                showWaterConfetti = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                    tappedWorkout = false
+                                    showWaterConfetti = false
+                                }
+                            }
+
+                            if showWaterConfetti {
+                                ForEach(0..<15, id: \.self) { i in
+                                    ConfettiDrop(
+                                        symbol: "drop.fill",
+                                        color: .blue,
+                                        xOffset: CGFloat.random(in: -50...50)
+                                    )
+                                }
+                            }
+
+                        }
+
+                        // Exercises Card with Animated Red Glow + Fire Burst
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.red.opacity(0.5), lineWidth: 3)
+                                .scaleEffect(animateGlow ? 1.03 : 1.0)
+                                .shadow(color: Color.red.opacity(animateGlow ? 0.7 : 0.3), radius: 12, x: 0, y: 4)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateGlow)
+
                             ProgressCard(
                                 progress: Double(completedExercises()) / Double(totalExercises()),
                                 value: "\(completedExercises())",
@@ -347,18 +386,36 @@ struct HomeView: View {
                                 label: "Exercises",
                                 color: AppTheme.accentColor
                             )
+                            .scaleEffect(tappedExercise ? 0.97 : 1.0)
+                            .onTapGesture {
+                                tappedExercise = true
+                                showFireBurst = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                    tappedExercise = false
+                                    showFireBurst = false
+                                }
+                            }
+
+                            if showFireBurst {
+                                ForEach(0..<15, id: \.self) { i in
+                                    ConfettiDrop(
+                                        symbol: "flame.fill",
+                                        color: .red,
+                                        xOffset: CGFloat.random(in: -50...50)
+                                    )
+                                }
+                            }
+
                         }
                     }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(AppTheme.cardBackgroundColor)
-                            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
-                    )
+                    .onAppear {
+                        animateGlow = true
+                    }
+
                     
                     // Nutrition tips
                     VStack(alignment: .leading, spacing: 15) {
-                        Text("Nutrition Reminders")
+                        Text("Reminders")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.textPrimaryColor)
@@ -371,10 +428,18 @@ struct HomeView: View {
                             )
                             
                             NutritionReminderCard(
-                                icon: "fish.fill",
-                                color: Color(hex: "F9A826"),
-                                text: "Target ~145g of protein today"
+                                icon: "flame.fill", // 🔥 Motivation icon
+                                color: Color.orange,   // bold for energy
+                                text: "You sh*t buddy, be BETTER 😤"
                             )
+
+                            
+                            NutritionReminderCard(
+                                icon: "leaf.circle.fill", // sarcastic clean-eating vibe
+                                color: Color.green,       // natural green tone
+                                text: "Cook and eat meal skinny bone"
+                            )
+
                         }
                     }
                     .padding()
@@ -559,19 +624,15 @@ struct WorkoutCard: View {
             // Left side circle with day initial
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [AppTheme.primaryColor, AppTheme.primaryColor.opacity(0.7)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 60, height: 60)
-                
+                    .fill(WorkoutGradientProvider.gradient(for: workout.day))
+                    .frame(width: 42, height: 42) // ✅ reduced size
+                    .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
+
                 Text(String(workout.day.prefix(1)))
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
             }
+
             
             // Right side content
             VStack(alignment: .leading, spacing: 12) {
@@ -730,78 +791,6 @@ struct WorkoutDetailView: View {
     }
 }
 
-struct ExerciseRow: View {
-    let exercise: Exercise
-    let isCompleted: Bool
-    let toggleCompletion: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: toggleCompletion) {
-                HStack(alignment: .top, spacing: 15) {
-                    // Checkbox
-                    ZStack {
-                        Circle()
-                            .stroke(isCompleted ? AppTheme.primaryColor : Color.gray.opacity(0.5), lineWidth: 2)
-                            .frame(width: 24, height: 24)
-                        
-                        if isCompleted {
-                            Circle()
-                                .fill(AppTheme.primaryColor)
-                                .frame(width: 24, height: 24)
-                            
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 10) {
-                        // Exercise name
-                        Text(exercise.name)
-                            .font(.headline)
-                            .foregroundColor(isCompleted ? AppTheme.textSecondaryColor : AppTheme.textPrimaryColor)
-                            .strikethrough(isCompleted)
-                        
-                        HStack {
-                            // Sets and reps
-                            HStack(spacing: 5) {
-                                Text("\(exercise.sets) sets")
-                                    .foregroundColor(AppTheme.primaryColor)
-                                
-                                Text("×")
-                                    .foregroundColor(AppTheme.textSecondaryColor)
-                                
-                                Text("\(exercise.reps)")
-                                    .foregroundColor(AppTheme.primaryColor)
-                            }
-                            .font(.subheadline)
-                            
-                            Spacer()
-                            
-                            // Notes
-                            if !exercise.notes.isEmpty {
-                                Text(exercise.notes)
-                                    .font(.caption)
-                                    .foregroundColor(AppTheme.textSecondaryColor)
-                                    .italic()
-                            }
-                        }
-                    }
-                }
-                .padding(.vertical, 15)
-                .padding(.horizontal, 20)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Divider()
-                .padding(.leading, 60)
-                .opacity(0.5)
-        }
-        .background(Color.clear)
-    }
-}
 
 struct NutritionView: View {
     var body: some View {
@@ -1056,42 +1045,44 @@ struct NutritionView: View {
                                     ScrollView {
                                         VStack(spacing: 20) {
                                             // Profile header
-                                            ZStack(alignment: .bottom) {
-                                                // Background gradient
-                                                Rectangle()
-                                                    .fill(
-                                                        LinearGradient(
-                                                            gradient: Gradient(colors: [AppTheme.primaryColor, AppTheme.secondaryColor]),
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        )
-                                                    )
-                                                    .frame(height: 180)
-                                                
-                                                // Profile avatar and name
-                                                VStack(spacing: 8) {
-                                                    Image(systemName: "person.circle.fill")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(width: 80, height: 80)
-                                                        .foregroundColor(.white)
-                                                        .background(
-                                                            Circle()
-                                                                .fill(Color.white.opacity(0.2))
-                                                                .frame(width: 88, height: 88)
-                                                        )
-                                                        .padding(4)
-                                                    
+                                            ZStack {
+                                                // Background Gradient (Blue to Red)
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        Color(hex: "2193b0"), // blue
+                                                        Color(hex: "ff6e7f")  // red/pink blend
+                                                    ]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                                .ignoresSafeArea()
+
+                                                VStack(spacing: 12) {
+                                                    ZStack {
+                                                        Circle()
+                                                            .fill(Color.white.opacity(0.15))
+                                                            .frame(width: 95, height: 95)
+                                                            .blur(radius: 3)
+                                                            .shadow(color: .white.opacity(0.6), radius: 12, x: 0, y: 0)
+
+                                                        Image(systemName: "person.circle.fill")
+                                                            .resizable()
+                                                            .frame(width: 80, height: 80)
+                                                            .foregroundColor(.white)
+                                                    }
+
                                                     Text(userManager.profile.name)
-                                                        .font(.system(size: 24, weight: .bold))
+                                                        .font(.title2.bold())
                                                         .foregroundColor(.white)
-                                                    
+
                                                     Text("Badminton Player")
                                                         .font(.subheadline)
-                                                        .foregroundColor(.white.opacity(0.85))
+                                                        .foregroundColor(.white.opacity(0.9))
                                                 }
-                                                .padding(.bottom, 20)
+                                                .padding(.top, 50)
+                                                .padding(.bottom, 30)
                                             }
+
                                             
                                             // Profile info cards
                                             VStack(spacing: 20) {
@@ -1103,13 +1094,20 @@ struct NutritionView: View {
                                                 }
                                                 
                                                 // Fitness goal
+                                                // Fitness goal
                                                 InfoCard(title: "Fitness Goal") {
-                                                    Text(userManager.profile.goal)
-                                                        .font(.subheadline)
-                                                        .foregroundColor(AppTheme.textSecondaryColor)
-                                                        .multilineTextAlignment(.leading)
-                                                        .fixedSize(horizontal: false, vertical: true)
+                                                    VStack(alignment: .leading, spacing: 8) {
+                                                        Text(userManager.profile.goal)
+                                                            .font(.subheadline)
+                                                            .foregroundColor(AppTheme.textSecondaryColor)
+                                                            .multilineTextAlignment(.leading)
+                                                            .fixedSize(horizontal: false, vertical: true)
+                                                    }
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
                                                 }
+
+
+
                                                 
                                                 // Training schedule
                                                 InfoCard(title: "Training Information") {
@@ -1233,3 +1231,25 @@ struct NutritionView: View {
                                 .padding(.vertical, 4)
                             }
                         }
+struct ConfettiDrop: View {
+    let symbol: String
+    let color: Color
+    let xOffset: CGFloat
+    @State private var yOffset: CGFloat = -40
+    @State private var opacity: Double = 1.0
+
+    var body: some View {
+        Image(systemName: symbol)
+            .foregroundColor(color)
+            .font(.caption)
+            .opacity(opacity)
+            .offset(x: xOffset, y: yOffset)
+            .onAppear {
+                withAnimation(Animation.easeOut(duration: 1.2)) {
+                    yOffset = CGFloat.random(in: 60...120)
+                    opacity = 0
+                }
+            }
+    }
+}
+
