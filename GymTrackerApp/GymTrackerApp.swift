@@ -1,10 +1,14 @@
 import SwiftUI
+import UserNotifications
 
 @main
-
 struct GymTrackerApp: App {
     @StateObject private var userManager = UserManager()
-    
+
+    init() {
+        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -13,6 +17,7 @@ struct GymTrackerApp: App {
         }
     }
 }
+
 
 // MARK: - Models
 // Models remain unchanged
