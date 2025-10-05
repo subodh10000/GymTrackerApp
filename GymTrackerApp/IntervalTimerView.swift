@@ -28,7 +28,6 @@ struct IntervalTimerView: View {
 
                 Text(timeString(from: timeRemaining))
                     .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundColor(.black)
 
                 HStack(spacing: 30) {
                     Button(isRunning ? (isPaused ? "Resume" : "Pause") : "Start") {

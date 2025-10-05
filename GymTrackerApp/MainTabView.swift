@@ -1,3 +1,11 @@
+//
+//  MainTabView.swift
+//  GymTrackerApp
+//
+//  Created by Subodh Kathayat on 5/19/25.
+//
+
+
 import SwiftUI
 
 struct MainTabView: View {
@@ -14,6 +22,12 @@ struct MainTabView: View {
                     Image(systemName: "dumbbell.fill")
                     Text("Workouts")
                 }
+            
+            ChallengeView()
+                            .tabItem {
+                                Image(systemName: "flame.fill")
+                                Text("Challenges")
+                            }
 
             IntervalTrainingView()
                 .tabItem {

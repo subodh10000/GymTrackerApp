@@ -79,379 +79,340 @@ extension Color {
 // MARK: - Views
 
 
+
 struct OnboardingView: View {
     @EnvironmentObject var userManager: UserManager
-    @State private var name = ""
-    @State private var showError = false
-    @State private var animateGradient = false
     
+    // State to hold the user's input
+    @State private var name: String = ""
+    @State private var gender: Gender = .preferNotToSay
+    @State private var age: Double = 25
+    @State private var height: Double = 68
+    @State private var weight: Double = 150
+    @State private var fitnessLevel: FitnessLevel = .intermediate
+    @State private var goal: Goal = .muscleGain
+    @State private var daysPerWeek: Int = 4
+    @State private var sessionDuration: Double = 1.5
+    
+    // State to show a loading indicator
+    @State private var isGeneratingPlan = false
+
     var body: some View {
-        ZStack {
-            // 🔥 Background: Hero image
-            Image("zeus") // ⬅️ Add the lightning god image to Assets and name it "zeus"
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-            
-            // 🌀 Gradient overlay for mood + text contrast
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.black.opacity(0.75),
-                    Color(hex: "1f2937").opacity(0.85)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-            
-            VStack(spacing: 24) {
-                Spacer()
-
-                // Logo
-                VStack(spacing: 12) {
-                    Image(systemName: "bolt.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 70, height: 70)
-                        .foregroundColor(.white)
-
-                    Text("GYM TRACKER")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .tracking(2)
+        NavigationView {
+            Form {
+                Section(header: Text("About You")) {
+                    TextField("Name", text: $name)
+                    
+                    Picker("Gender", selection: $gender) {
+                        ForEach(Gender.allCases, id: \.self) { Text($0.rawValue) }
+                    }
+                    
+                    Stepper("Age: \(Int(age))", value: $age, in: 16...80)
+                    Stepper("Height: \(Int(height)) inches", value: $height, in: 50...84)
+                    Stepper("Weight: \(Int(weight)) lbs", value: $weight, in: 100...350)
                 }
 
-                Spacer(minLength: 20)
-
-                // 🎯 RESIZED CARD BOX
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Welcome!")
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
-
-                    Text("This app contains your custom strength and leaning workout plan designed specifically for badminton performance.")
-                        .font(.footnote)
-                        .foregroundColor(.white.opacity(0.8))
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("What should we call you?")
-                            .font(.callout)
-                            .foregroundColor(.white.opacity(0.85))
-
-                        TextField("Enter your name", text: $name)
-                            .padding()
-                            .background(Color.white.opacity(0.15))
-                            .cornerRadius(10)
-                            .foregroundColor(.white)
-                    }
-
-                    Button(action: {
-                        userManager.profile.name = name
-                        userManager.saveProfile()
-                    }) {
-                        Text("Get Started")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(LinearGradient(colors: [Color(hex: "667eea"), Color(hex: "764ba2")], startPoint: .leading, endPoint: .trailing))
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                Section(header: Text("Your Commitment")) {
+                    Picker("Fitness Level", selection: $fitnessLevel) {
+                        ForEach(FitnessLevel.allCases, id: \.self) { Text($0.rawValue) }
+                    }.pickerStyle(.segmented)
+                    
+                    Stepper("Days per week: \(daysPerWeek)", value: $daysPerWeek, in: 1...7)
+                    Stepper("Session Duration: \(sessionDuration, specifier: "%.1f") hours", value: $sessionDuration, in: 0.5...3, step: 0.5)
                 }
-                .padding(20)
-                .frame(maxWidth: 340) // ✅ LIMITS WIDTH to fit neatly
-                .background(Color.black.opacity(0.3))
-                .cornerRadius(20)
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
 
-                .padding(.horizontal, 24)
-                .frame(maxHeight: 360) // ✅ LIMITS HEIGHT
+                Section(header: Text("Your Goal")) {
+                    Picker("Primary Goal", selection: $goal) {
+                        ForEach(Goal.allCases, id: \.self) { Text($0.rawValue) }
+                    }
+                }
 
-                Spacer()
+                Section {
+                    Button(action: createProfileAndFetchPlan) {
+                        if isGeneratingPlan {
+                            HStack {
+                                Text("Generating Your Plan...")
+                                Spacer()
+                                ProgressView()
+                            }
+                        } else {
+                            Text("Create My Plan")
+                        }
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || isGeneratingPlan)
+                }
             }
-            .padding(.bottom, 30)
-
+            .navigationTitle("Create Your Profile")
         }
     }
     
+    private func createProfileAndFetchPlan() {
+        isGeneratingPlan = true
+        let userProfile = UserProfile(
+            name: name,
+            age: Int(age),
+            gender: gender,
+            height: height,
+            weight: weight,
+            fitnessLevel: fitnessLevel,
+            goal: goal,
+            daysPerWeek: daysPerWeek,
+            sessionDurationHours: sessionDuration
+        )
+        
+        userManager.saveProfileAndGenerateWorkouts(profile: userProfile)
+        
+        // This is where you might also ask for notification permissions
+        // NotificationManager.shared.requestAuthorization(userManager: userManager)
+    }
 }
+
+struct OnboardingView_Previews: PreviewProvider {
+    static var previews: some View {
+        OnboardingView()
+            .environmentObject(UserManager())
+    }
+}
+// In GymTrackerApp.swift, replace your existing HomeView with this one
+
+struct HomeView: View {
+    @EnvironmentObject var userManager: UserManager
+    @State private var animateGlow = false
+    @State private var tappedWorkout = false
+    @State private var tappedExercise = false
+    @State private var showWaterConfetti = false
+    @State private var showFireBurst = false
     
-    struct HomeView: View {
-        @EnvironmentObject var userManager: UserManager
-        @State private var animateGlow = false
-        @State private var tappedWorkout = false
-        @State private var tappedExercise = false
-        @State private var showWaterConfetti = false
-        @State private var showFireBurst = false
-        
-        
-        
-        var body: some View {
-            NavigationView {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Welcome section
-                        ZStack(alignment: .topLeading) {
-                            // Background with gradient overlay
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color(hex: "5E60CE"), Color(hex: "4EA8DE")]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // 1. Welcome section (remains the same)
+                    ZStack(alignment: .topLeading) {
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color(hex: "5E60CE"), Color(hex: "4EA8DE")]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
                                 )
-                                .frame(height: 180)
-                            
-                            // Content
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Hello, \(userManager.profile.name)!")
-                                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                                            .foregroundColor(.white)
-                                        
-                                        Text("Ready for your workout?")
-                                            .font(.headline)
-                                            .foregroundColor(.white.opacity(0.85))
-                                    }
+                            )
+                            .frame(height: 180)
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Hello, \(userManager.profile?.name ?? "User")!")
+                                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                                        .foregroundColor(.white)
                                     
-                                    Spacer()
-                                    
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color.white.opacity(0.2))
-                                            .frame(width: 60, height: 60)
-                                        
-                                        Image(systemName: "figure.strengthtraining.traditional")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 30, height: 30)
-                                            .foregroundColor(.white)
-                                    }
+                                    Text("Ready for your workout?")
+                                        .font(.headline)
+                                        .foregroundColor(.white.opacity(0.85))
                                 }
                                 
-                                Spacer(minLength: 20)
+                                Spacer()
                                 
-                                let todaysWorkout = getTodaysWorkout()
-                                if let workout = todaysWorkout {
-                                    NavigationLink(destination: WorkoutDetailView(workout: workout, workoutIndex: userManager.workouts.firstIndex(where: { $0.id == workout.id }) ?? 0)) {
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text("Today's Focus: \(workout.focus)")
-                                                    .font(.headline)
-                                                    .foregroundColor(.white)
-                                                
-                                                
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            Image(systemName: "arrow.right.circle.fill")
-                                                .foregroundColor(.white)
-                                                .font(.system(size: 24))
-                                        }
-                                        .padding()
-                                        .background(Color.white.opacity(0.15))
-                                        .cornerRadius(12)
-                                    }
-                                } else {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white.opacity(0.2))
+                                        .frame(width: 60, height: 60)
+                                    
+                                    Image(systemName: "figure.strengthtraining.traditional")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 30, height: 30)
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            
+                            Spacer(minLength: 20)
+                            
+                            let todaysWorkout = getTodaysWorkout()
+                            if let workout = todaysWorkout {
+                                NavigationLink(destination: WorkoutDetailView(workout: workout, workoutIndex: userManager.workouts.firstIndex(where: { $0.id == workout.id }) ?? 0)) {
                                     HStack {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("Rest Day")
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Today's Focus: \(workout.focus)")
                                                 .font(.headline)
                                                 .foregroundColor(.white)
-                                            
-                                            Text("Focus on recovery today")
-                                                .font(.subheadline)
-                                                .foregroundColor(.white.opacity(0.85))
                                         }
-                                        
                                         Spacer()
-                                        
-                                        Image(systemName: "bed.double.fill")
+                                        Image(systemName: "arrow.right.circle.fill")
                                             .foregroundColor(.white)
-                                            .font(.system(size: 20))
+                                            .font(.system(size: 24))
                                     }
                                     .padding()
                                     .background(Color.white.opacity(0.15))
                                     .cornerRadius(12)
                                 }
-                            }
-                            .padding()
-                        }
-                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-                        
-                        // Weekly progress
-                        HStack(spacing: 15) {
-                            // Workouts Card with Animated Purple Glow + Water Confetti
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.purple.opacity(0.5), lineWidth: 3)
-                                    .scaleEffect(animateGlow ? 1.03 : 1.0)
-                                    .shadow(color: Color.purple.opacity(animateGlow ? 0.7 : 0.3), radius: 12, x: 0, y: 4)
-                                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateGlow)
-                                
-                                ProgressCard(
-                                    progress: Double(completedWorkouts()) / Double(userManager.workouts.count),
-                                    value: "\(completedWorkouts())",
-                                    total: "\(userManager.workouts.count)",
-                                    label: "Workouts",
-                                    color: AppTheme.primaryColor
-                                )
-                                .scaleEffect(tappedWorkout ? 0.97 : 1.0)
-                                .onTapGesture {
-                                    tappedWorkout = true
-                                    showWaterConfetti = true
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                                        tappedWorkout = false
-                                        showWaterConfetti = false
+                            } else {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Rest Day")
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                        Text("Focus on recovery today")
+                                            .font(.subheadline)
+                                            .foregroundColor(.white.opacity(0.85))
                                     }
+                                    Spacer()
+                                    Image(systemName: "bed.double.fill")
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 20))
                                 }
-                                
-                                if showWaterConfetti {
-                                    ForEach(0..<15, id: \.self) { i in
-                                        ConfettiDrop(
-                                            symbol: "drop.fill",
-                                            color: .blue,
-                                            xOffset: CGFloat.random(in: -50...50)
-                                        )
-                                    }
-                                }
-                                
-                            }
-                            
-                            // Exercises Card with Animated Red Glow + Fire Burst
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.red.opacity(0.5), lineWidth: 3)
-                                    .scaleEffect(animateGlow ? 1.03 : 1.0)
-                                    .shadow(color: Color.red.opacity(animateGlow ? 0.7 : 0.3), radius: 12, x: 0, y: 4)
-                                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateGlow)
-                                
-                                ProgressCard(
-                                    progress: Double(completedExercises()) / Double(totalExercises()),
-                                    value: "\(completedExercises())",
-                                    total: "\(totalExercises())",
-                                    label: "Exercises",
-                                    color: AppTheme.accentColor
-                                )
-                                .scaleEffect(tappedExercise ? 0.97 : 1.0)
-                                .onTapGesture {
-                                    tappedExercise = true
-                                    showFireBurst = true
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                                        tappedExercise = false
-                                        showFireBurst = false
-                                    }
-                                }
-                                
-                                if showFireBurst {
-                                    ForEach(0..<15, id: \.self) { i in
-                                        ConfettiDrop(
-                                            symbol: "flame.fill",
-                                            color: .red,
-                                            xOffset: CGFloat.random(in: -50...50)
-                                        )
-                                    }
-                                }
-                                
-                            }
-                        }
-                        .onAppear {
-                            animateGlow = true
-                        }
-                        
-                        
-                        // Nutrition tips
-                        VStack(alignment: .leading, spacing: 15) {
-                            Text("Reminders")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(AppTheme.textPrimaryColor)
-                            
-                            VStack(spacing: 15) {
-                                NutritionReminderCard(
-                                    icon: "drop.fill",
-                                    color: Color(hex: "4EA8DE"),
-                                    text: "Drink at least 3L of water today"
-                                )
-                                
-                                NutritionReminderCard(
-                                    icon: "flame.fill", // 🔥 Motivation icon
-                                    color: Color.orange,   // bold for energy
-                                    text: "Comeback is within reach! 😤"
-                                )
-                                
-                                
-                                NutritionReminderCard(
-                                    icon: "leaf.circle.fill", // sarcastic clean-eating vibe
-                                    color: Color.green,       // natural green tone
-                                    text: "Skipping meal? Skinny bone"
-                                )
-                                
+                                .padding()
+                                .background(Color.white.opacity(0.15))
+                                .cornerRadius(12)
                             }
                         }
                         .padding()
-                        .background(
+                    }
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                    
+                    // 2. --- THIS IS THE EXACT SPOT FOR THE NEW VIEW ---
+                    CommitmentView()
+                    
+                    // 3. The rest of your view remains the same
+                    HStack(spacing: 15) {
+                        ZStack {
                             RoundedRectangle(cornerRadius: 20)
-                                .fill(AppTheme.cardBackgroundColor)
-                                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
-                        )
+                                .stroke(Color.purple.opacity(0.5), lineWidth: 3)
+                                .scaleEffect(animateGlow ? 1.03 : 1.0)
+                                .shadow(color: Color.purple.opacity(animateGlow ? 0.7 : 0.3), radius: 12, x: 0, y: 4)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateGlow)
+                            
+                            ProgressCard(
+                                progress: Double(completedWorkouts()) / Double(userManager.workouts.count),
+                                value: "\(completedWorkouts())",
+                                total: "\(userManager.workouts.count)",
+                                label: "Workouts",
+                                color: AppTheme.primaryColor
+                            )
+                            .scaleEffect(tappedWorkout ? 0.97 : 1.0)
+                            .onTapGesture {
+                                tappedWorkout = true
+                                showWaterConfetti = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                    tappedWorkout = false
+                                    showWaterConfetti = false
+                                }
+                            }
+                            
+                            if showWaterConfetti {
+                                ForEach(0..<15, id: \.self) { i in
+                                    ConfettiDrop(
+                                        symbol: "drop.fill",
+                                        color: .blue,
+                                        xOffset: CGFloat.random(in: -50...50)
+                                    )
+                                }
+                            }
+                        }
+                        
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.red.opacity(0.5), lineWidth: 3)
+                                .scaleEffect(animateGlow ? 1.03 : 1.0)
+                                .shadow(color: Color.red.opacity(animateGlow ? 0.7 : 0.3), radius: 12, x: 0, y: 4)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateGlow)
+                            
+                            ProgressCard(
+                                progress: Double(completedExercises()) / Double(totalExercises()),
+                                value: "\(completedExercises())",
+                                total: "\(totalExercises())",
+                                label: "Exercises",
+                                color: AppTheme.accentColor
+                            )
+                            .scaleEffect(tappedExercise ? 0.97 : 1.0)
+                            .onTapGesture {
+                                tappedExercise = true
+                                showFireBurst = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                    tappedExercise = false
+                                    showFireBurst = false
+                                }
+                            }
+                            
+                            if showFireBurst {
+                                ForEach(0..<15, id: \.self) { i in
+                                    ConfettiDrop(
+                                        symbol: "flame.fill",
+                                        color: .red,
+                                        xOffset: CGFloat.random(in: -50...50)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    .onAppear {
+                        animateGlow = true
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("Motivation")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(AppTheme.textPrimaryColor)
+                        
+                        VStack(spacing: 15) {
+                            NavigationLink(destination: CrushModeView()) {
+                                NutritionReminderCard(
+                                    icon: "heart.circle.fill",
+                                    color: .pink,
+                                    text: "Tap to activate beast Mode"
+                                )
+                            }
+                            
+                            CoffeeDateView()
+                        }
                     }
                     .padding()
-                    .background(AppTheme.backgroundColor.edgesIgnoringSafeArea(.all))
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(AppTheme.cardBackgroundColor)
+                            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+                    )
                 }
-                .navigationBarHidden(true)
+                .padding()
+                .background(AppTheme.backgroundColor.edgesIgnoringSafeArea(.all))
             }
-        }
-        
-        // Helper functions from original code
-        private func getTodaysWorkout() -> Workout? {
-            // Implementation stays the same
-            let today = Calendar.current.component(.weekday, from: Date())
-            // Map weekday numbers to workout days (1 = Sunday, 2 = Monday, etc.)
-            switch today {
-            case 1: // Sunday
-                return userManager.workouts.first { $0.day == "Sunday" }
-            case 3: // Tuesday
-                return nil
-            case 4: // Wednesday
-                return userManager.workouts.first { $0.day == "Wednesday" }
-            case 5: // Thursday
-                return userManager.workouts.first { $0.day == "Thursday" }
-            case 6: // Friday
-                return userManager.workouts.first { $0.day == "Friday" }
-            case 7: // Saturday
-                return userManager.workouts.first { $0.day == "Saturday" }
-            default:
-                return nil
-            }
-        }
-        
-        private func completedWorkouts() -> Int {
-            // Implementation stays the same
-            var count = 0
-            for workout in userManager.workouts {
-                let completed = !workout.exercises.contains { !$0.isCompleted }
-                if completed {
-                    count += 1
-                }
-            }
-            return count
-        }
-        
-        private func totalExercises() -> Int {
-            // Implementation stays the same
-            return userManager.workouts.reduce(0) { $0 + $1.exercises.count }
-        }
-        
-        private func completedExercises() -> Int {
-            // Implementation stays the same
-            return userManager.workouts.reduce(0) { $0 + $1.exercises.filter(\.isCompleted).count }
+            .navigationBarHidden(true)
         }
     }
     
+    // Helper functions
+    private func getTodaysWorkout() -> Workout? {
+        let today = Calendar.current.component(.weekday, from: Date())
+        let weekdayIndex = today - 1
+        guard Calendar.current.weekdaySymbols.indices.contains(weekdayIndex) else {
+            return nil
+        }
+        let weekdayName = Calendar.current.weekdaySymbols[weekdayIndex]
+        
+        return userManager.workouts.first { $0.day.localizedCaseInsensitiveContains(weekdayName) }
+    }
+    
+    private func completedWorkouts() -> Int {
+        var count = 0
+        for workout in userManager.workouts {
+            guard !workout.exercises.isEmpty else { continue }
+            let completed = !workout.exercises.contains { !$0.isCompleted }
+            if completed {
+                count += 1
+            }
+        }
+        return count
+    }
+    
+    private func totalExercises() -> Int {
+        return userManager.workouts.reduce(0) { $0 + $1.exercises.count }
+    }
+    
+    private func completedExercises() -> Int {
+        return userManager.workouts.reduce(0) { $0 + $1.exercises.filter(\.isCompleted).count }
+    }
+}
     struct NutritionReminderCard: View {
         let icon: String
         let color: Color
@@ -535,9 +496,10 @@ struct OnboardingView: View {
             )
         }
     }
-    
     struct WorkoutListView: View {
         @EnvironmentObject var userManager: UserManager
+        @State private var showingResetAlert = false
+
         
         var body: some View {
             NavigationView {
@@ -556,11 +518,23 @@ struct OnboardingView: View {
                 .navigationTitle("Weekly Workouts")
                 .toolbar {
                     Button(action: {
-                        userManager.resetAllWorkouts()
+                        // This will trigger the confirmation alert
+                        showingResetAlert = true
                     }) {
-                        Text("Reset")
-                            .foregroundColor(AppTheme.primaryColor)
+                        Text("New Plan") // Changed the button text
+                            .foregroundColor(AppTheme.accentColor) // Changed color to red for emphasis
                     }
+                }
+                .alert(isPresented: $showingResetAlert) {
+                    Alert(
+                        title: Text("Generate New Plan?"),
+                        message: Text("This will clear your current workouts and let you create a new plan. Are you sure?"),
+                        primaryButton: .destructive(Text("Yes, Create New Plan")) {
+                            // This is the action that resets the app
+                            userManager.resetApp()
+                        },
+                        secondaryButton: .cancel()
+                    )
                 }
             }
         }
@@ -645,101 +619,120 @@ struct OnboardingView: View {
         }
     }
     
-    struct WorkoutDetailView: View {
-        @EnvironmentObject var userManager: UserManager
-        var workout: Workout
-        var workoutIndex: Int
-        
-        var body: some View {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Header section with gradient background
-                    ZStack(alignment: .bottomLeading) {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [AppTheme.primaryColor, AppTheme.secondaryColor]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+struct WorkoutDetailView: View {
+    @EnvironmentObject var userManager: UserManager
+    var workout: Workout
+    var workoutIndex: Int
+    @State private var showingEditView = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+
+                // 🔷 Header with Day, Focus & Progress Bar
+                ZStack(alignment: .bottomLeading) {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [AppTheme.primaryColor, AppTheme.secondaryColor]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                            .frame(height: 170)
-                            .edgesIgnoringSafeArea(.top)
-                        
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(workout.day)
-                                .font(.system(size: 32, weight: .bold))
-                                .foregroundColor(.white)
-                            
-                            Text(workout.focus)
-                                .font(.headline)
-                                .foregroundColor(.white.opacity(0.85))
-                                .lineLimit(2)
-                            
-                            // Progress bar
-                            let completedCount = workout.exercises.filter(\.isCompleted).count
-                            let progress = Double(completedCount) / Double(workout.exercises.count)
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("\(completedCount)/\(workout.exercises.count) completed")
-                                        .font(.subheadline)
-                                        .foregroundColor(.white)
-                                    
-                                    Spacer()
-                                    
-                                    Text(String(format: "%.0f%%", progress * 100))
-                                        .font(.subheadline)
-                                        .foregroundColor(.white)
-                                }
-                                
-                                GeometryReader { geometry in
-                                    ZStack(alignment: .leading) {
-                                        Capsule()
-                                            .fill(Color.white.opacity(0.3))
-                                            .frame(height: 8)
-                                        
-                                        Capsule()
-                                            .fill(Color.white)
-                                            .frame(width: geometry.size.width * CGFloat(progress), height: 8)
-                                    }
-                                }
-                                .frame(height: 8)
-                            }
-                            .padding(.top, 10)
-                        }
-                        .padding(20)
-                    }
-                    
-                    // Exercises list
+                        )
+                        .frame(height: 170)
+                        .edgesIgnoringSafeArea(.top)
+
                     VStack(alignment: .leading, spacing: 5) {
+                        Text(workout.day)
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(.white)
+
+                        Text(workout.focus)
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.85))
+                            .lineLimit(2)
+
+                        // ✅ Progress bar
+                        // ✅ Progress bar
+                        let completedCount = workout.exercises.filter(\.isCompleted).count
+                        // THIS IS THE CORRECTED LINE
+                        let progress = workout.exercises.isEmpty ? 0.0 : Double(completedCount) / Double(workout.exercises.count)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("\(completedCount)/\(workout.exercises.count) completed")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+
+                                Spacer()
+
+                                Text(String(format: "%.0f%%", progress * 100))
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                            }
+
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.3))
+                                        .frame(height: 8)
+
+                                    Capsule()
+                                        .fill(Color.white)
+                                        .frame(width: geometry.size.width * CGFloat(progress), height: 8)
+                                }
+                            }
+                            .frame(height: 8)
+                        }
+                        .padding(.top, 10)
+                    }
+                    .padding(20)
+                }
+
+                // 🏋️‍♂️ Exercise List + Edit Button
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack {
                         Text("Exercises")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.textPrimaryColor)
-                            .padding(.horizontal, 20)
                         
-                        ForEach(Array(workout.exercises.enumerated()), id: \.element.id) { index, exercise in
-                            ExerciseRow(
-                                exercise: exercise,
-                                isCompleted: exercise.isCompleted,
-                                toggleCompletion: {
-                                    userManager.toggleExerciseCompletion(
-                                        workoutIndex: workoutIndex,
-                                        exerciseIndex: index
-                                    )
-                                }
-                            )
+                        Spacer()
+                        
+                        Button(action: {
+                            showingEditView = true
+                        }) {
+                            Image(systemName: "pencil")
+                                .foregroundColor(AppTheme.primaryColor)
                         }
                     }
-                    .padding(.top, 10)
+                    .padding(.horizontal, 20)
+
+                    ForEach(Array(workout.exercises.enumerated()), id: \.element.id) { index, exercise in
+                        ExerciseRow(
+                            exercise: exercise,
+                            isCompleted: exercise.isCompleted,
+                            toggleCompletion: {
+                                userManager.toggleExerciseCompletion(
+                                    workoutIndex: workoutIndex,
+                                    exerciseIndex: index
+                                )
+                            }
+                        )
+                    }
                 }
+                .padding(.top, 10)
             }
-            .background(AppTheme.backgroundColor)
-            .edgesIgnoringSafeArea(.top)
-            .navigationBarTitleDisplayMode(.inline)
+        }
+        .background(AppTheme.backgroundColor)
+        .edgesIgnoringSafeArea(.top)
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingEditView) {
+            EditWorkoutView(workoutIndex: workoutIndex, userManager: userManager)
         }
     }
+}
+
     
     
     struct NutritionView: View {
@@ -997,135 +990,138 @@ struct OnboardingView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         // Profile header
-                        ZStack {
-                            // Background Gradient (Brown to White)
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(red: 108/255, green: 76/255, blue: 56/255), // chocolate brown
-                                    .white
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .ignoresSafeArea()
-                            
-                            VStack(spacing: 12) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white.opacity(0.15))
-                                        .frame(width: 110, height: 110)
-                                        .blur(radius: 3)
-                                        .shadow(color: .white.opacity(0.6), radius: 12, x: 0, y: 0)
-                                    
-                                    Image("bust")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 100, height: 100)
-                                        .clipShape(Circle())
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 6)
-                                        )
-                                        .shadow(color: .white.opacity(0.5), radius: 10, x: 0, y: 0)
-                                        .scaleEffect(bustScale)
-                                        .onAppear {
-                                            withAnimation(.spring(response: 0.6, dampingFraction: 0.5)) {
-                                                bustScale = 1.0
-                                            }
-                                        }
-                                }
+                        if let profile = userManager.profile {
+                            ZStack {
+                                // Background Gradient (Brown to White)
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(red: 108/255, green: 76/255, blue: 56/255), // chocolate brown
+                                        .white
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                                .ignoresSafeArea()
                                 
-                                Text(userManager.profile.name)
-                                    .font(.title2.bold())
-                                    .foregroundColor(.white)
-                                
-                                Text("Badminton Player")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white.opacity(0.9))
-                            }
-                            .padding(.top, 50)
-                            .padding(.bottom, 30)
-                        }
-                        
-                        // Profile info cards
-                        VStack(spacing: 20) {
-                            // Personal information
-                            InfoCard(title: "Personal Information") {
-                                InfoRow(label: "Age", value: "\(userManager.profile.age) years")
-                                InfoRow(label: "Height", value: userManager.profile.height)
-                                InfoRow(label: "Weight", value: "\(userManager.profile.weight) lbs")
-                            }
-                            
-                            // Fitness goal
-                            // Fitness goal
-                            InfoCard(title: "Fitness Goal") {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(userManager.profile.goal)
-                                        .font(.subheadline)
-                                        .foregroundColor(AppTheme.textSecondaryColor)
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            
-                            
-                            
-                            
-                            // Training schedule
-                            InfoCard(title: "Training Information") {
                                 VStack(spacing: 12) {
-                                    InfoRow(label: "Training Days", value: "5 days/week")
-                                    InfoRow(label: "Session Duration", value: "1.5 hours")
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.white.opacity(0.15))
+                                            .frame(width: 110, height: 110)
+                                            .blur(radius: 3)
+                                            .shadow(color: .white.opacity(0.6), radius: 12, x: 0, y: 0)
+                                        
+                                        Image("bust")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 100, height: 100)
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white.opacity(0.3), lineWidth: 6)
+                                            )
+                                            .shadow(color: .white.opacity(0.5), radius: 10, x: 0, y: 0)
+                                            .scaleEffect(bustScale)
+                                            .onAppear {
+                                                withAnimation(.spring(response: 0.6, dampingFraction: 0.5)) {
+                                                    bustScale = 1.0
+                                                }
+                                            }
+                                    }
                                     
-                                    Divider()
+                                    Text(profile.name)
+                                        .font(.title2.bold())
+                                        .foregroundColor(.white)
                                     
-                                    Text("Weekly Schedule")
-                                        .font(.headline)
-                                        .foregroundColor(AppTheme.textPrimaryColor)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.top, 5)
-                                    
-                                    ForEach(userManager.workouts) { workout in
-                                        HStack {
-                                            Text(workout.day)
-                                                .font(.subheadline)
-                                                .foregroundColor(AppTheme.textPrimaryColor)
-                                            
-                                            Spacer()
-                                            
-                                            Text(workout.focus)
-                                                .font(.subheadline)
-                                                .foregroundColor(AppTheme.textSecondaryColor)
-                                                .lineLimit(1)
+                                    Text(profile.goal.rawValue)
+                                        .font(.subheadline)
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                                .padding(.top, 50)
+                                .padding(.bottom, 30)
+                            }
+                            
+                            // Profile info cards
+                            VStack(spacing: 20) {
+                                // Personal information
+                                InfoCard(title: "Personal Information") {
+                                    InfoRow(label: "Age", value: "\(profile.age) years")
+                                    InfoRow(label: "Height", value: "\(Int(profile.height)) inches")
+                                    InfoRow(label: "Weight", value: "\(Int(profile.weight)) lbs")
+                                }
+
+                                
+                                // Fitness goal
+                                // Fitness goal
+                                InfoCard(title: "Fitness Goal") {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(profile.goal.rawValue)
+                                            .font(.subheadline)
+                                            .foregroundColor(AppTheme.textSecondaryColor)
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                
+                                
+                                
+                                
+                                // Training schedule
+                                InfoCard(title: "Training Information") {
+                                    VStack(spacing: 12) {
+                                        InfoRow(label: "Training Days", value: "\(profile.daysPerWeek) days/week")
+                                        InfoRow(label: "Session Duration", value: String(format: "%.1f hours", profile.sessionDurationHours))
+                                        
+                                        Divider()
+                                        
+                                        Text("Weekly Schedule")
+                                            .font(.headline)
+                                            .foregroundColor(AppTheme.textPrimaryColor)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.top, 5)
+                                        
+                                        ForEach(userManager.workouts) { workout in
+                                            HStack {
+                                                Text(workout.day)
+                                                    .font(.subheadline)
+                                                    .foregroundColor(AppTheme.textPrimaryColor)
+                                                
+                                                Spacer()
+                                                
+                                                Text(workout.focus)
+                                                    .font(.subheadline)
+                                                    .foregroundColor(AppTheme.textSecondaryColor)
+                                                    .lineLimit(1)
+                                            }
+                                            .padding(.vertical, 4)
                                         }
-                                        .padding(.vertical, 4)
                                     }
                                 }
-                            }
-                            
-                            // Reset button
-                            Button(action: {
-                                showingLogoutAlert = true
-                            }) {
-                                Text("Reset App")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color(hex: "FF5A5F"), Color(hex: "FF9A8B")]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
+                                
+                                // Reset button
+                                Button(action: {
+                                    showingLogoutAlert = true
+                                }) {
+                                    Text("Reset App")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color(hex: "FF5A5F"), Color(hex: "FF9A8B")]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
                                         )
-                                    )
-                                    .cornerRadius(15)
-                                    .shadow(color: Color(hex: "FF5A5F").opacity(0.3), radius: 10, x: 0, y: 5)
+                                        .cornerRadius(15)
+                                        .shadow(color: Color(hex: "FF5A5F").opacity(0.3), radius: 10, x: 0, y: 5)
+                                }
+                                .padding(.top, 20)
                             }
-                            .padding(.top, 20)
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     }
                     .background(AppTheme.backgroundColor.edgesIgnoringSafeArea(.all))
                 }
@@ -1136,10 +1132,7 @@ struct OnboardingView: View {
                         title: Text("Reset App"),
                         message: Text("This will clear all your data and restart the app. Are you sure?"),
                         primaryButton: .destructive(Text("Reset")) {
-                            UserDefaults.standard.removeObject(forKey: "userProfile")
-                            userManager.profile = UserProfile(name: "")
-                            userManager.hasCompletedOnboarding = false
-                            userManager.resetAllWorkouts()
+                            userManager.resetApp()
                         },
                         secondaryButton: .cancel()
                     )
@@ -1147,6 +1140,7 @@ struct OnboardingView: View {
             }
         }
     }
+    
     
     struct InfoCard<Content: View>: View {
         let title: String
@@ -1223,51 +1217,6 @@ struct OnboardingView: View {
     // MARK: - MainTabView
 
     // MARK: - MainTabView
-
-    struct MainTabView: View {
-        @State private var selectedTab = 0
-
-        var body: some View {
-            TabView(selection: $selectedTab) {
-                HomeView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 0 ? "house.fill" : "house")
-                        Text("Home")
-                    }
-                    .tag(0)
-
-                WorkoutListView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 1 ? "figure.run.circle.fill" : "figure.run.circle")
-                        Text("Workouts")
-                    }
-                    .tag(1)
-
-                NutritionView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 2 ? "fork.knife.circle.fill" : "fork.knife.circle")
-                        Text("Nutrition")
-                    }
-                    .tag(2)
-                
-                IntervalTrainingView()
-                    .tabItem {
-                        Image(systemName: "stopwatch.fill")
-                        Text("HIIT")
-                    }
-                    .tag(4)
-
-
-                ProfileView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 3 ? "person.crop.circle.fill" : "person.crop.circle")
-                        Text("Profile")
-                    }
-                    .tag(3)
-            }
-            .tint(AppTheme.primaryColor)
-        }
-    }
 
 
 

@@ -1,21 +1,31 @@
 // In ChallengeView.swift
 import SwiftUI
 
+// --- 1. Define a simple model for our hardcoded data ---
+struct Challenge {
+    var id = UUID()
+    let name: String
+    let description: String
+    let imageName: String // The name of an image in your Assets
+}
+
+// --- 2. Create the main view ---
 struct ChallengeView: View {
-    // Placeholder challenges
+    
+    // --- Here is your hardcoded challenge data ---
     let challenges = [
-        ("90 Day Summer Challenge", "Get in the best shape of your life this summer.", "summit"),
-        ("21 Day Hard Challenge", "Test your mental and physical fortitude.", "winter"),
-        ("Winter Arc", "Build a strong foundation during the cold months.", "strength")
+        Challenge(name: "90 Day Summer Challenge", description: "Get in the best shape of your life this summer.", imageName: "gigachad"),
+        Challenge(name: "21 Day Hard Challenge", description: "Test your mental and physical fortitude.", imageName: "zeus"),
+        Challenge(name: "Winter Arc", description: "Build a strong foundation during the cold months.", imageName: "roman_bust")
     ]
 
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 15) {
-                    ForEach(challenges, id: \.0) { name, description, imageName in
-                        NavigationLink(destination: Text("\(name) Detail View - Coming Soon!")) {
-                            ChallengeCard(title: name, description: description, imageName: imageName)
+                VStack(alignment: .leading, spacing: 20) {
+                    ForEach(challenges, id: \.id) { challenge in
+                        NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
+                            ChallengeCard(challenge: challenge)
                         }
                     }
                 }
@@ -26,37 +36,48 @@ struct ChallengeView: View {
     }
 }
 
-// A helper view for the challenge card UI
+// --- 3. A helper view for the card UI ---
 struct ChallengeCard: View {
-    let title: String
-    let description: String
-    let imageName: String
+    let challenge: Challenge
 
     var body: some View {
-        ZStack {
-            Image(imageName) // Assuming you'll add images with these names to your assets
+        ZStack(alignment: .bottomLeading) {
+            // Background Image with a dark overlay
+            Image(challenge.imageName)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(height: 180)
+                .frame(height: 200)
                 .overlay(
-                    LinearGradient(colors: [.black.opacity(0.8), .clear], startPoint: .bottom, endPoint: .center)
+                    LinearGradient(
+                        colors: [.black.opacity(0.7), .clear],
+                        startPoint: .bottom,
+                        endPoint: .center
+                    )
                 )
 
-            VStack(alignment: .leading) {
-                Spacer()
-                Text(title)
+            // Text content
+            VStack(alignment: .leading, spacing: 5) {
+                Text(challenge.name)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
-                Text(description)
+                
+                Text(challenge.description)
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.9))
                     .lineLimit(2)
             }
             .padding()
         }
-        .frame(height: 180)
+        .frame(height: 200)
         .cornerRadius(20)
-        .shadow(radius: 5)
+        .shadow(color: .black.opacity(0.2), radius: 5, y: 3)
+    }
+}
+
+// --- 4. Add a preview for easy designing ---
+struct ChallengeView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChallengeView()
     }
 }

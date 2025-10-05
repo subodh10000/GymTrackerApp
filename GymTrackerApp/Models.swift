@@ -1,122 +1,283 @@
-//
-//  Models.swift
-//  GymTrackerApp
-//
-//  Created by Subodh Kathayat on 4/16/25.
-//
-
 import Foundation
 import SwiftUI
 
-// MARK: - Models
+// MARK: - Enums for User Profile & Exercises
+// These enums now match the backend and will be used in the onboarding view.
 
-struct Exercise: Identifiable, Codable {
-    var id = UUID()
-    var name: String
-    var sets: Int
-    var reps: String
-    var isCompleted: Bool = false
-    var notes: String = ""
-    var restTime: Int = 60 // default rest between sets in seconds
-    var description: String = "No description available." // how to perform it
+enum Gender: String, Codable, CaseIterable {
+    case male = "Male"
+    case female = "Female"
+    case preferNotToSay = "Prefer Not to Say"
 }
 
-struct Workout: Identifiable, Codable {
-    var id = UUID()
-    var day: String
-    var focus: String
-    var exercises: [Exercise]
+enum FitnessLevel: String, Codable, CaseIterable {
+    case beginner = "Beginner"
+    case intermediate = "Intermediate"
+    case advanced = "Advanced"
 }
+
+enum Goal: String, Codable, CaseIterable {
+    case fatLoss = "Fat Loss"
+    case muscleGain = "Muscle Gain"
+    case endurance = "Endurance"
+    case strength = "Strength"
+    case flexibility = "Flexibility"
+}
+
+enum ExerciseCategory: String, Codable, CaseIterable {
+    case strength = "Strength"
+    case plyometric = "Plyometric"
+    case mobility = "Mobility"
+    case core = "Core"
+    case cardio = "Cardio"
+    case agility = "Agility"
+    case general = "General"
+    case onCourt = "On-Court Drills"
+}
+
+enum ExerciseDifficulty: String, Codable, CaseIterable {
+    case beginner = "Beginner"
+    case intermediate = "Intermediate"
+    case advanced = "Advanced"
+}
+enum Rank {
+    case bronze, silver, gold, none
+    
+    var title: String {
+        switch self {
+        case .bronze: return "Bronze"
+        case .silver: return "Silver"
+        case .gold: return "Gold"
+        case .none: return "No Rank"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .bronze: return "🥉"
+        case .silver: return "🥈"
+        case .gold: return "🏆"
+        case .none: return "💪"
+        }
+    }
+}
+
+// MARK: - Core Data Models
 
 struct UserProfile: Codable {
     var name: String
-    var age: Int = 23
-    var weight: Int = 145
-    var height: String = "5'7\""
-    var goal: String = "Lean, strong legs, visible abs"
+    var age: Int
+    var gender: Gender
+    var height: Double // Stored in inches
+    var weight: Double // Stored in lbs
+    var fitnessLevel: FitnessLevel
+    var goal: Goal
+    var daysPerWeek: Int
+    var sessionDurationHours: Double
+
+    // Computed properties for metric conversion
+    var heightInMeters: Double {
+        return height * 0.0254
+    }
+
+    var weightInKilograms: Double {
+        return weight * 0.453592
+    }
 }
 
-// MARK: - ViewModel
+// UPDATED Workout Struct
+struct Workout: Identifiable, Codable {
+    var id: UUID
+    var day: String
+    var focus: String
+    var exercises: [Exercise]
+
+    // Custom decoder to generate ID on the frontend
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.day = try container.decode(String.self, forKey: .day)
+        self.focus = try container.decode(String.self, forKey: .focus)
+        self.exercises = try container.decode([Exercise].self, forKey: .exercises)
+        // Generate the ID locally instead of decoding it from the JSON
+        self.id = UUID()
+    }
+    
+    // We need to define the keys to decode from the JSON, excluding 'id'
+    private enum CodingKeys: String, CodingKey {
+        case day, focus, exercises
+    }
+}
+
+// UPDATED Exercise Struct
+struct Exercise: Identifiable, Codable {
+    var id: UUID
+    var name: String
+    var sets: String
+    var reps: String
+    var restTime: String
+    var description: String
+    var category: ExerciseCategory
+    var equipment: String?
+    var difficulty: ExerciseDifficulty
+    var isCompleted: Bool = false
+
+    // Custom decoder to generate ID on the frontend
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.sets = try container.decode(String.self, forKey: .sets)
+        self.reps = try container.decode(String.self, forKey: .reps)
+        self.restTime = try container.decode(String.self, forKey: .restTime)
+        self.description = try container.decode(String.self, forKey: .description)
+        self.category = try container.decode(ExerciseCategory.self, forKey: .category)
+        self.equipment = try container.decodeIfPresent(String.self, forKey: .equipment)
+        self.difficulty = try container.decode(ExerciseDifficulty.self, forKey: .difficulty)
+        // Generate the ID locally instead of decoding it from the JSON
+        self.id = UUID()
+        // isCompleted is not in the JSON, so we initialize it here
+        self.isCompleted = false
+    }
+    
+    // We need to define the keys to decode from the JSON, excluding 'id' and 'isCompleted'
+    private enum CodingKeys: String, CodingKey {
+        case name, sets, reps, restTime, description, category, equipment, difficulty
+    }
+}
+
+
+// MARK: - ViewModel (Prepared for Networking)
 
 class UserManager: ObservableObject {
-    @Published var profile: UserProfile = UserProfile(name: "")
+    @Published var profile: UserProfile? {
+        didSet {
+            saveProfile()
+        }
+    }
+    @Published var workouts: [Workout] = [] {
+        didSet {
+            saveWorkouts()
+        }
+    }
+    
+    // This property will now control whether the main app or onboarding is shown.
     @Published var hasCompletedOnboarding: Bool = false
-    @Published var workouts: [Workout] = []
 
     init() {
         loadProfile()
         loadWorkouts()
-    }
-
-    func saveProfile() {
-        hasCompletedOnboarding = true
-        if let encoded = try? JSONEncoder().encode(profile) {
-            UserDefaults.standard.set(encoded, forKey: "userProfile")
-        }
-    }
-
-    func loadProfile() {
-        if let saved = UserDefaults.standard.data(forKey: "userProfile"),
-           let decoded = try? JSONDecoder().decode(UserProfile.self, from: saved) {
-            profile = decoded
+        
+        if profile != nil {
             hasCompletedOnboarding = true
         }
     }
 
+    func saveProfileAndGenerateWorkouts(profile: UserProfile) {
+        self.profile = profile
+        
+        // Call the network service to get the AI-generated plan
+        NetworkService.shared.generateInitialPlan(for: profile) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let workouts):
+                    // On success, update the workouts and mark onboarding as complete
+                    self?.workouts = workouts
+                    self?.hasCompletedOnboarding = true
+                    print("✅ Successfully fetched and updated workouts.")
+                case .failure(let error):
+                    // On failure, you could show an alert to the user
+                    print("❌ Error generating workout plan: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    func workoutsCompletedThisWeek() -> Int {
+        var count = 0
+        for workout in workouts {
+            // A workout is complete if it has exercises and none are incomplete
+            guard !workout.exercises.isEmpty else { continue }
+            if !workout.exercises.contains(where: { !$0.isCompleted }) {
+                count += 1
+            }
+        }
+        return count
+    }
+
+    func getCurrentRank() -> Rank {
+        let completedCount = workoutsCompletedThisWeek()
+        if completedCount >= 5 {
+            return .gold
+        } else if completedCount >= 4 {
+            return .silver
+        } else if completedCount >= 3 {
+            return .bronze
+        } else {
+            return .none
+        }
+    }
+    func toggleExerciseCompletion(workoutIndex: Int, exerciseIndex: Int) {
+        // Create a mutable copy of the workouts array.
+        var updatedWorkouts = workouts
+        
+        // Modify the property in the copy.
+        updatedWorkouts[workoutIndex].exercises[exerciseIndex].isCompleted.toggle()
+        
+        self.workouts = updatedWorkouts
+    }
+    
     func resetAllWorkouts() {
-        for i in workouts.indices {
-            for j in workouts[i].exercises.indices {
+        for i in 0..<workouts.count {
+            for j in 0..<workouts[i].exercises.count {
                 workouts[i].exercises[j].isCompleted = false
             }
         }
     }
-
-    func toggleExerciseCompletion(workoutIndex: Int, exerciseIndex: Int) {
-        workouts[workoutIndex].exercises[exerciseIndex].isCompleted.toggle()
+    
+    func updateWorkout(at index: Int, with newWorkout: Workout) {
+        guard workouts.indices.contains(index) else { return }
+        workouts[index] = newWorkout
     }
-
-    func loadWorkouts() {
-        workouts = [
-            Workout(day: "Wednesday", focus: "Lower Body (Strength and Explosiveness)", exercises: [
-                Exercise(name: "Back Squat", sets: 4, reps: "5", restTime: 90, description: "Hold barbell on shoulders, bend knees/hips to squat down, then push up."),
-                Exercise(name: "Romanian Deadlift", sets: 3, reps: "8", restTime: 60, description: "Keep legs straight, hinge at hips with dumbbells or barbell to stretch hamstrings."),
-                Exercise(name: "Walking Lunges", sets: 3, reps: "12 each leg", restTime: 60, description: "Step forward into a lunge, push up and alternate legs."),
-                Exercise(name: "Box Jumps / Broad Jumps", sets: 3, reps: "5", restTime: 90, description: "Explosively jump onto a box or forward, land softly."),
-                Exercise(name: "Standing Calf Raises", sets: 4, reps: "15", restTime: 45, description: "Stand tall, raise heels, squeeze calves, lower slowly."),
-                Exercise(name: "Plank with Shoulder Taps", sets: 3, reps: "30 sec", restTime: 30, description: "Hold plank, alternate tapping each shoulder.")
-            ]),
-            Workout(day: "Thursday", focus: "Upper Body Push (Chest, Shoulders, Triceps)", exercises: [
-                Exercise(name: "Flat Barbell Bench Press", sets: 4, reps: "6", restTime: 90, description: "Lower bar to chest and push back up with control."),
-                Exercise(name: "Overhead Dumbbell Press", sets: 4, reps: "8", restTime: 60, description: "Push dumbbells from shoulders to overhead."),
-                Exercise(name: "Incline Dumbbell Press", sets: 3, reps: "10", restTime: 60, description: "Press dumbbells at an incline bench for upper chest."),
-                Exercise(name: "Lateral Raises", sets: 3, reps: "12", restTime: 30, description: "Raise dumbbells sideways to shoulder level."),
-                Exercise(name: "Tricep Dips (weighted if possible)", sets: 3, reps: "10", restTime: 60, description: "Lower body between bars or bench and press up."),
-                Exercise(name: "Pushups to failure", sets: 2, reps: "Max", restTime: 60, description: "Standard pushups until you can't do any more.")
-            ]),
-            Workout(day: "Friday", focus: "Lower Body (Strength and Stability)", exercises: [
-                Exercise(name: "Deadlifts", sets: 4, reps: "5", restTime: 90, description: "Lift barbell from ground by hinging hips."),
-                Exercise(name: "Bulgarian Split Squats", sets: 3, reps: "8 each leg", restTime: 60, description: "Rear foot elevated, lunge down with control."),
-                Exercise(name: "Glute Ham Raises or Hamstring Curls", sets: 3, reps: "12", restTime: 60, description: "Curl hamstrings using machine or bodyweight."),
-                Exercise(name: "Lateral Band Walks", sets: 3, reps: "20 steps", restTime: 30, description: "Walk sideways with resistance band."),
-                Exercise(name: "Single-Leg Toe Touches", sets: 2, reps: "10 each leg", restTime: 30, description: "Balance on one leg, reach down to touch toe."),
-                Exercise(name: "Hanging Leg Raises", sets: 3, reps: "12", restTime: 60, description: "Hang from bar and raise legs straight up.")
-            ]),
-            Workout(day: "Saturday", focus: "Upper Body Pull (Back, Biceps, Core)", exercises: [
-                Exercise(name: "Pull-ups", sets: 4, reps: "Max", restTime: 90, description: "Pull body up to bar with control."),
-                Exercise(name: "Barbell Rows", sets: 4, reps: "8", restTime: 60, description: "Row barbell to torso while bent over."),
-                Exercise(name: "Face Pulls", sets: 3, reps: "15", restTime: 30, description: "Pull cable to face to activate rear delts."),
-                Exercise(name: "Seated Cable Rows", sets: 3, reps: "10", restTime: 60, description: "Row cable handle to stomach while seated."),
-                Exercise(name: "EZ Bar Curls / Hammer Curls", sets: 3, reps: "12 superset", restTime: 30, description: "Alternate bicep curls with different grips."),
-                Exercise(name: "Cable Woodchoppers", sets: 3, reps: "12 each side", restTime: 30, description: "Rotate core while pulling cable diagonally.")
-            ]),
-            Workout(day: "Sunday", focus: "Athletic Conditioning and Core", exercises: [
-                Exercise(name: "Sled Push or Hill Sprints", sets: 6, reps: "15-20 sec bursts", restTime: 90, description: "Sprint uphill or push sled hard and fast."),
-                Exercise(name: "Agility Ladder Drills", sets: 1, reps: "10 min", restTime: 0, description: "Do fast feet drills through the ladder."),
-                Exercise(name: "Jump Rope Intervals", sets: 3, reps: "2 min", restTime: 60, description: "Jump rope fast, then rest."),
-                Exercise(name: "Farmer Carries", sets: 3, reps: "40 meters", restTime: 60, description: "Carry heavy weights walking steadily."),
-                Exercise(name: "Weighted Decline Sit-ups", sets: 3, reps: "15", restTime: 30, description: "Sit-ups on decline bench holding weight."),
-                Exercise(name: "Russian Twists", sets: 3, reps: "20", restTime: 30, description: "Twist torso side to side with weight.")
-            ])
-        ]
+    
+    // MARK: - UserDefaults Persistence
+    
+    func resetApp() {
+        // Clear local properties
+        profile = nil
+        workouts = []
+        hasCompletedOnboarding = false
+        
+        // Clear UserDefaults
+        UserDefaults.standard.removeObject(forKey: "userProfile")
+        UserDefaults.standard.removeObject(forKey: "userWorkouts")
+        
+        print("✅ App has been reset.")
+    }
+    
+    private func saveProfile() {
+        if let encodedProfile = try? JSONEncoder().encode(profile) {
+            UserDefaults.standard.set(encodedProfile, forKey: "userProfile")
+        }
+    }
+    
+    private func loadProfile() {
+        if let savedProfileData = UserDefaults.standard.data(forKey: "userProfile") {
+            if let decodedProfile = try? JSONDecoder().decode(UserProfile.self, from: savedProfileData) {
+                self.profile = decodedProfile
+            }
+        }
+    }
+    
+    private func saveWorkouts() {
+        if let encodedWorkouts = try? JSONEncoder().encode(workouts) {
+            UserDefaults.standard.set(encodedWorkouts, forKey: "userWorkouts")
+        }
+    }
+    
+    private func loadWorkouts() {
+        if let savedWorkoutsData = UserDefaults.standard.data(forKey: "userWorkouts") {
+            if let decodedWorkouts = try? JSONDecoder().decode([Workout].self, from: savedWorkoutsData) {
+                self.workouts = decodedWorkouts
+            }
+        }
     }
 }

@@ -13,6 +13,11 @@ struct ExerciseRow: View {
     @State private var timer: Timer?
     @State private var isPaused = true
     @State private var completedSets: Set<Int> = []
+    
+    // Safely convert sets string to Int
+    private var numberOfSets: Int {
+        Int(exercise.sets) ?? 0
+    }
 
     var body: some View {
         ZStack {
@@ -73,7 +78,7 @@ struct ExerciseRow: View {
                             }
 
                             HStack(spacing: 8) {
-                                ForEach(0..<exercise.sets, id: \ .self) { index in
+                                ForEach(0..<numberOfSets, id: \ .self) { index in
                                     Circle()
                                         .fill(completedSets.contains(index) ? AppTheme.primaryColor : Color.gray.opacity(0.3))
                                         .frame(width: 14, height: 14)
@@ -107,8 +112,11 @@ struct ExerciseRow: View {
     }
 
     private func startRestTimer() {
-        totalTime = exercise.restTime
-        remainingTime = exercise.restTime
+        // Safely convert restTime string (e.g., "90s") to an Int
+        let restSeconds = Int(exercise.restTime.replacingOccurrences(of: "s", with: "")) ?? 60
+        
+        totalTime = restSeconds
+        remainingTime = restSeconds
         showRestTimer = true
         isPaused = false
         startTimer()

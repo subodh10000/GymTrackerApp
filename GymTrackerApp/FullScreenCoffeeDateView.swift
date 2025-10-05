@@ -1,49 +1,87 @@
 import SwiftUI
 
 struct FullScreenCoffeeDateView: View {
-    @State private var bounce = false
     @Environment(\.dismiss) var dismiss
+    @State private var animateHearts = false
+    @State private var glow = false
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color.pink.opacity(0.6), .white], startPoint: .topLeading, endPoint: .bottomTrailing)
+            // 🌸 Background gradient
+            LinearGradient(colors: [Color.white, Color.pink.opacity(0.15)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 28) {
+                Spacer()
+
                 Text("You said YES!")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.pink)
 
-                Image(systemName: "cup.and.saucer.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 160, height: 160)
-                    .foregroundColor(.brown)
-                    .scaleEffect(bounce ? 1.1 : 0.9)
-                    .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: bounce)
-                    .onAppear {
-                        bounce = true
-                    }
+                ZStack {
+                    // 🌟 Glowing Aura
+                    Circle()
+                        .fill(Color.pink.opacity(0.2))
+                        .frame(width: 260, height: 260)
+                        .scaleEffect(glow ? 1.08 : 0.95)
+                        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: glow)
 
-                Text("Coffee vibes loading... ☕️💞")
-                    .font(.title3)
-                    .foregroundColor(.gray)
+                    // ☕ Lottie coffee animation
+                    LottieView(animationName: "coffeeDate", loopMode: .loop)
+                        .frame(width: 200, height: 200)
+
+                    // 💖 Floating hearts
+                    ForEach(0..<8) { i in
+                        FloatingHeart(offset: Double(i) * 50, delay: Double(i) * 0.3)
+                    }
+                }
+                .padding(.vertical, 10)
+
+                Spacer()
 
                 Button(action: {
                     dismiss()
                 }) {
-                    Text("Back to Reminders")
+                    Text("HI ")
                         .font(.headline)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
                         .background(Color.pink)
-                        .cornerRadius(12)
+                        .cornerRadius(14)
                         .shadow(radius: 4)
                 }
-                .padding(.top, 30)
+
+                Spacer(minLength: 60)
+            }
+            .padding(.horizontal, 20)
+            .onAppear {
+                glow = true
+                animateHearts = true
             }
         }
+    }
+}
+struct FloatingHeart: View {
+    var offset: Double
+    var delay: Double
+
+    @State private var animateUp = false
+    @State private var opacity = 0.0
+    private let heartSize: CGFloat = 24
+
+    var body: some View {
+        Image(systemName: "heart.fill")
+            .resizable()
+            .frame(width: heartSize, height: heartSize)
+            .foregroundColor(.pink.opacity(0.7))
+            .offset(x: CGFloat.random(in: -60...60), y: animateUp ? -220 : 0)
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(Animation.easeOut(duration: 2.5).delay(delay)) {
+                    animateUp = true
+                    opacity = 1
+                }
+            }
     }
 }

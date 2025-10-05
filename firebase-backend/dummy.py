@@ -1,5 +1,28 @@
+import firebase_admin
+from firebase_admin import credentials, firestore
+from datetime import datetime
+import random
 
-[
+# ---- Initialize Firebase ----
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+# ---- Dummy Users ----
+users = [
+    {"uid": "dkc195", "username": "dkc195", "displayName": "Dhiraj KC", "bio": "Runner & coffee lover ☕️"},
+    {"uid": "sk", "username": "sk", "displayName": "Subodh Kathayat", "bio": "Cycling is life 🚴‍♂️"},
+    {"uid": "tester160", "username": "tester160", "displayName": "Tester Dev", "bio": "Yoga and mindfulness 🧘"},
+]
+
+# Seed users
+for u in users:
+    u["searchName"] = u["username"].lower()
+    db.collection("users").document(u["uid"]).set(u)
+    print(f"✅ Created user: {u['uid']}")
+
+# ---- Workout Reference Data ----
+workout_data = [
     {
         "day": "Day 1: Push Focus",
         "focus": "Push",
@@ -383,3 +406,24 @@
         ]
     }
 ]
+
+# ---- Randomly assign each activity to a user ----
+print("\n💪 Seeding randomized activities...")
+for day in workout_data:
+    # Pick a random user
+    user = random.choice(users)
+    activity = {
+        "userId": user["uid"],
+        "exerciseDetails": {
+            "day": day["day"],
+            "focus": day["focus"],
+            "exercises": day["exercises"]
+        },
+        "isPublic": True,
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+    ref = db.collection("activities").document()
+    ref.set(activity)
+    print(f"✅ Added activity for {user['uid']}: {day['day']}")
+
+print("\n🎉 Done seeding randomized users and activities!")

@@ -9,6 +9,7 @@ struct LottieView: UIViewRepresentable {
         let animationView = LottieAnimationView(name: animationName)
         animationView.loopMode = loopMode
         animationView.play()
+        animationView.contentMode = .scaleAspectFit
         return animationView
     }
 
