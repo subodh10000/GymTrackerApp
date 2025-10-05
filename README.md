@@ -12,7 +12,7 @@ A smart, AI-powered workout planner designed to create personalized fitness rout
 
 GymTrackerApp is more than just a workout log; it's a personal trainer in your pocket. It addresses the common challenge of creating an effective workout plan by leveraging the power of AI to generate routines tailored to your specific profile and goals. The app also includes social and motivational features to encourage consistency and make fitness a rewarding journey.
 
-[![Watch the video](https://img.youtube.com/vi/rbmAisJO4kg/maxresdefault.jpg)](https://www.youtube.com/watch?v=rbmAisJO4kg)
+[Watch my YouTube Video](https://www.youtube.com/watch?v=rbmAisJO4kg)
 
 
 
