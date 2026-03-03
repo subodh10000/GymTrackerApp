@@ -1,4 +1,4 @@
-// ExerciseRow.swift (Enhanced with Weight Tracking, Auto-Rest Timer, and Haptic Feedback)
+// ExerciseRow.swift (Auto-Rest Timer and Haptic Feedback)
 
 import SwiftUI
 import AudioToolbox
@@ -14,30 +14,6 @@ struct ExerciseRow: View {
     @State private var timer: Timer?
     @State private var isPaused = true
     @State private var completedSets: Set<Int> = []
-    @State private var isExpanded = false
-    @State private var currentWeight: String = ""
-    @State private var showWeightInput = false
-    @AppStorage private var savedWeight: String
-    
-    private static func stableWeightStorageKey(for exercise: Exercise) -> String {
-        let normalizedName = exercise.name
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-            .replacingOccurrences(of: " ", with: "_")
-        return "weight_\(normalizedName)"
-    }
-    
-    // Initialize AppStorage with exercise-specific key
-    init(exercise: Exercise, isCompleted: Bool, toggleCompletion: @escaping () -> Void) {
-        self.exercise = exercise
-        self.isCompleted = isCompleted
-        self.toggleCompletion = toggleCompletion
-        self._savedWeight = AppStorage(
-            wrappedValue: "",
-            Self.stableWeightStorageKey(for: exercise)
-        )
-    }
-    
     // Safely convert sets string to Int
     private var numberOfSets: Int {
         Int(exercise.sets) ?? 0
@@ -76,7 +52,7 @@ struct ExerciseRow: View {
 
                 // Exercise content
                 VStack(alignment: .leading, spacing: 8) {
-                    // Header row with name and expand button
+                    // Header row
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(exercise.name)
@@ -94,21 +70,6 @@ struct ExerciseRow: View {
                         }
                         
                         Spacer()
-                        
-                        // Expand/collapse button for weight logging
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3)) {
-                                isExpanded.toggle()
-                            }
-                        }) {
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(AppTheme.textSecondaryColor)
-                                .padding(8)
-                                .background(Color.gray.opacity(0.08))
-                                .cornerRadius(8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
 
                     // Quick info row (always visible) - Beginner friendly labels
@@ -154,66 +115,6 @@ struct ExerciseRow: View {
                         
                         Spacer()
                         
-                        // Weight badge (if saved)
-                        if !savedWeight.isEmpty {
-                            HStack(spacing: 4) {
-                                Image(systemName: "scalemass")
-                                    .font(.system(size: 10))
-                                Text("\(savedWeight) lbs")
-                                    .font(.system(size: 12, weight: .bold))
-                            }
-                            .foregroundColor(Color(hex: "F59E0B"))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color(hex: "F59E0B").opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                    }
-                    
-                    // Expanded content - Weight logging only
-                    if isExpanded {
-                        VStack(alignment: .leading, spacing: 12) {
-                            // Weight input section
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Log Weight")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(AppTheme.textSecondaryColor)
-                                
-                                HStack(spacing: 10) {
-                                    HStack {
-                                        TextField("Weight", text: $currentWeight)
-                                            .keyboardType(.decimalPad)
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(AppTheme.textPrimaryColor)
-                                        
-                                        Text("lbs")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(AppTheme.textSecondaryColor)
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 10)
-                                    .background(Color.gray.opacity(0.08))
-                                    .cornerRadius(10)
-                                    
-                                    Button(action: {
-                                        if !currentWeight.isEmpty {
-                                            savedWeight = currentWeight
-                                            // Haptic feedback
-                                            let generator = UIImpactFeedbackGenerator(style: .medium)
-                                            generator.impactOccurred()
-                                        }
-                                    }) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 28))
-                                            .foregroundColor(currentWeight.isEmpty ? Color.gray.opacity(0.3) : AppTheme.primaryColor)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .disabled(currentWeight.isEmpty)
-                                }
-                            }
-                            .padding(.top, 4)
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
                     // Set tracker row
@@ -293,10 +194,6 @@ struct ExerciseRow: View {
         .scaleEffect(isPressed ? 0.98 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isCompleted)
-        .onAppear {
-            // Load saved weight into input field
-            currentWeight = savedWeight
-        }
         .onDisappear {
             timer?.invalidate()
         }

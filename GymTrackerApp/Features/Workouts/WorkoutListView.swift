@@ -477,7 +477,7 @@ struct WorkoutCompletionCelebration: View {
                 
                 // Stats row
                 HStack(spacing: 30) {
-                    CelebrationStat(icon: "flame.fill", value: "Saved", label: "to history", color: Color(hex: "F97316"))
+                    CelebrationStat(icon: "flame.fill", value: "Great", label: "effort", color: Color(hex: "F97316"))
                     CelebrationStat(icon: "trophy.fill", value: "+1", label: "workout", color: Color(hex: "F59E0B"))
                 }
                 .opacity(showContent ? 1 : 0)

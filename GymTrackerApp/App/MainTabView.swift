@@ -7,8 +7,20 @@
 
 
 import SwiftUI
+import UIKit
 
 struct MainTabView: View {
+    init() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(AppTheme.cardBackgroundColor)
+        appearance.shadowColor = UIColor.black.withAlphaComponent(0.08)
+        
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+        UITabBar.appearance().isTranslucent = false
+    }
+    
     var body: some View {
         TabView {
             HomeView()
