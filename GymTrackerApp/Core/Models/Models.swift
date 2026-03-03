@@ -873,6 +873,10 @@ class UserManager: ObservableObject {
     // MARK: - UserDefaults Persistence
     
     func resetApp() {
+        // Cancel all scheduled notifications
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        
         // Clear UserDefaults
         UserDefaults.standard.removeObject(forKey: "userProfile")
         UserDefaults.standard.removeObject(forKey: "userWorkouts")

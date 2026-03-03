@@ -630,8 +630,11 @@ struct FullCalendarSection: View {
         
         guard let range = calendar.range(of: .day, in: .month, for: selectedMonth) else { return days }
         
+        let year = calendar.component(.year, from: selectedMonth)
+        let month = calendar.component(.month, from: selectedMonth)
+        
         days += range.compactMap { day -> Date? in
-            calendar.date(bySetting: .day, value: day, of: selectedMonth)
+            calendar.date(from: DateComponents(year: year, month: month, day: day))
         }
         
         return days
@@ -884,8 +887,11 @@ struct ContributionCalendarView: View {
         
         guard let range = calendar.range(of: .day, in: .month, for: date) else { return days }
         
+        let year = calendar.component(.year, from: date)
+        let month = calendar.component(.month, from: date)
+        
         days += range.compactMap { day -> Date? in
-            calendar.date(bySetting: .day, value: day, of: date)
+            calendar.date(from: DateComponents(year: year, month: month, day: day))
         }
         
         return days

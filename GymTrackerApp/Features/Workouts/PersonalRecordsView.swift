@@ -338,11 +338,11 @@ struct AddEditRecordView: View {
                     .textInputAutocapitalization(.words)
             }
             .padding()
-            .background(Color.white.opacity(0.05))
+            .background(AppTheme.cardBackgroundColor)
             .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    .stroke(AppTheme.textSecondaryColor.opacity(0.2), lineWidth: 1)
             )
         }
     }
@@ -359,11 +359,11 @@ struct AddEditRecordView: View {
                 .accentColor(AppTheme.primaryColor)
                 .background(
                     RoundedRectangle(cornerRadius: 18)
-                        .fill(Color.white.opacity(0.05))
+                        .fill(AppTheme.cardBackgroundColor)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .stroke(AppTheme.textSecondaryColor.opacity(0.2), lineWidth: 1)
                 )
         }
     }
@@ -383,7 +383,7 @@ struct AddEditRecordView: View {
                         } label: {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 14)
-                                    .fill(iconName == icon ? AppTheme.primaryColor.opacity(0.2) : Color.white.opacity(0.04))
+                                    .fill(iconName == icon ? AppTheme.primaryColor.opacity(0.2) : AppTheme.textSecondaryColor.opacity(0.08))
                                     .frame(width: 60, height: 60)
                                 
                                 Image(systemName: icon)
