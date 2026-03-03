@@ -111,21 +111,25 @@ struct ChallengeView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // Header section
-                    headerSection
-                        .opacity(showContent ? 1 : 0)
-                        .offset(y: showContent ? 0 : 20)
-                    
-                    // All challenges grid
-                    challengesSection
-                        .opacity(showContent ? 1 : 0)
-                        .offset(y: showContent ? 0 : 25)
+            ZStack {
+                AppTheme.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Header section
+                        headerSection
+                            .opacity(showContent ? 1 : 0)
+                            .offset(y: showContent ? 0 : 20)
+                        
+                        // All challenges grid
+                        challengesSection
+                            .opacity(showContent ? 1 : 0)
+                            .offset(y: showContent ? 0 : 25)
+                    }
+                    .padding(.bottom, 8)
                 }
-                .padding(.bottom, 100)
             }
-            .background(AppTheme.backgroundColor.ignoresSafeArea())
             .navigationTitle("Challenges")
             .navigationBarTitleDisplayMode(.large)
         }

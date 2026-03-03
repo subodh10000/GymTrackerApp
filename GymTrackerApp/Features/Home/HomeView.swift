@@ -39,9 +39,7 @@ struct HomeView: View {
                     }
                     .padding(.horizontal)
                     .padding(.top, 8)
-                }
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 110)
+                    .padding(.bottom, 8)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)

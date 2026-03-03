@@ -103,7 +103,7 @@ struct PushupsChallengeView: View {
                     }
                 }
                 .padding(20)
-                .padding(.bottom, 100)
+                .padding(.bottom, 8)
             }
         }
         .ignoresSafeArea(edges: .top)

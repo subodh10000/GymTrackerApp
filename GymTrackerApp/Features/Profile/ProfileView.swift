@@ -8,39 +8,43 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {  // Updated from deprecated NavigationView
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
-                    if let profile = userManager.profile {
-                        profileHeader(for: profile)
-                        infoSections(for: profile)
-                        
-                        // Delete Account Button - Always visible when profile exists
-                        Button(action: {
-                            showingLogoutAlert = true
-                        }) {
-                            HStack {
-                                Image(systemName: "trash.fill")
-                                    .font(.system(size: 16, weight: .semibold))
-                                Text("Delete Account")
-                                    .font(.headline)
+            ZStack {
+                AppTheme.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 20) {
+                        if let profile = userManager.profile {
+                            profileHeader(for: profile)
+                            infoSections(for: profile)
+                            
+                            // Delete Account Button - Always visible when profile exists
+                            Button(action: {
+                                showingLogoutAlert = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "trash.fill")
+                                        .font(.system(size: 16, weight: .semibold))
+                                    Text("Delete Account")
+                                        .font(.headline)
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.red)
+                                .cornerRadius(15)
+                                .shadow(color: Color.red.opacity(0.3), radius: 10, x: 0, y: 5)
                             }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.red)
-                            .cornerRadius(15)
-                            .shadow(color: Color.red.opacity(0.3), radius: 10, x: 0, y: 5)
+                            .padding(.horizontal)
+                            .padding(.top, 10)
+                            .padding(.bottom, 40)
+                        } else {
+                            emptyState
                         }
-                        .padding(.horizontal)
-                        .padding(.top, 10)
-                        .padding(.bottom, 40)
-                    } else {
-                        emptyState
                     }
+                    .padding(.bottom, 40)
                 }
-                .padding(.bottom, 40)
             }
-            .background(AppTheme.backgroundColor.ignoresSafeArea())
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .alert("Delete Account", isPresented: $showingLogoutAlert) {
