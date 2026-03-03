@@ -20,26 +20,30 @@ struct WorkoutListView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if userManager.workouts.isEmpty {
-                    emptyStateView
-                } else {
-                    VStack(spacing: 15) {
-                        ForEach(Array(userManager.workouts.enumerated()), id: \.element.id) { index, workout in
-                            NavigationLink(destination: WorkoutDetailView(workoutIndex: index)) {
-                                WorkoutCard(workout: workout)
+            ZStack {
+                AppTheme.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    if userManager.workouts.isEmpty {
+                        emptyStateView
+                    } else {
+                        VStack(spacing: 15) {
+                            ForEach(Array(userManager.workouts.enumerated()), id: \.element.id) { index, workout in
+                                NavigationLink(destination: WorkoutDetailView(workoutIndex: index)) {
+                                    WorkoutCard(workout: workout)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                ))
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            ))
                         }
+                        .padding()
                     }
-                    .padding()
                 }
             }
-            .background(AppTheme.backgroundColor.edgesIgnoringSafeArea(.all))
             .navigationTitle("Weekly Workouts")
             .toolbar {
                 if !userManager.workouts.isEmpty {
@@ -258,7 +262,6 @@ struct WorkoutDetailView: View {
     let workoutIndex: Int
     @State private var showingEditView = false
     @State private var showCompletionCelebration = false
-    @State private var previousCompletedCount = 0
     @StateObject private var viewModel = WorkoutDetailViewModel()
     
     // Get workout dynamically from userManager to ensure reactivity
@@ -274,6 +277,9 @@ struct WorkoutDetailView: View {
 
     var body: some View {
         ZStack {
+            AppTheme.backgroundColor
+                .ignoresSafeArea()
+            
             ScrollView {
                 if let workout = workout {
                     VStack(alignment: .leading, spacing: 20) {
@@ -286,7 +292,6 @@ struct WorkoutDetailView: View {
                         .padding()
                 }
             }
-            .background(AppTheme.backgroundColor)
             
             // Completion celebration overlay
             if showCompletionCelebration {
@@ -303,20 +308,15 @@ struct WorkoutDetailView: View {
         .sheet(isPresented: $showingEditView) {
             EditWorkoutView(workoutIndex: workoutIndex)
         }
-        .onChange(of: isWorkoutComplete) { _, newValue in
-            if newValue && previousCompletedCount > 0 {
-                // Only show celebration when transitioning to complete
-                withAnimation(.spring(response: 0.5)) {
-                    showCompletionCelebration = true
-                }
-                
-                // Haptic feedback
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
+        .onChange(of: isWorkoutComplete) { oldValue, newValue in
+            guard !oldValue, newValue else { return }
+            
+            withAnimation(.spring(response: 0.5)) {
+                showCompletionCelebration = true
             }
-        }
-        .onAppear {
-            previousCompletedCount = workout?.exercises.filter { $0.isCompleted }.count ?? 0
+            
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
         }
     }
 
