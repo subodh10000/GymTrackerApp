@@ -18,7 +18,6 @@ struct MainTabView: View {
         
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
-        UITabBar.appearance().isTranslucent = false
     }
     
     var body: some View {
@@ -36,10 +35,10 @@ struct MainTabView: View {
                 }
             
             ChallengeView()
-                            .tabItem {
-                                Image(systemName: "flame.fill")
-                                Text("Challenges")
-                            }
+                .tabItem {
+                    Image(systemName: "flame.fill")
+                    Text("Challenges")
+                }
 
             IntervalTrainingView()
                 .tabItem {
@@ -53,8 +52,6 @@ struct MainTabView: View {
                     Text("Profile")
                 }
         }
-        .toolbarBackground(AppTheme.cardBackgroundColor, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
     }
 }
 
