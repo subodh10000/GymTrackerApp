@@ -18,12 +18,12 @@ GymTrackerApp is more than just a workout log; it's a personal trainer in your p
 
 
 ### Key Features
-* **🤖 AI-Powered Plans:** Creates custom 7-day workout plans based on your age, gender, schedule, and fitness goals.
-* **🔥 Motivational Challenges:** Join time-based challenges like the "90 Day Summer Challenge" or the "21 Day Hard Challenge" to compete with friends.
-* **🏆 Progress & Ranking:** A GitHub-style commitment tracker visualizes your weekly consistency and ranks you from Bronze to Gold.
-* **✅ Track Your Workouts:** Easily check off completed exercises and save your progress.
-* **💖 Unique Motivation:** Includes fun, interactive views like "Crush Mode" to give you that extra push.
-* **⏱️ Interval Timer:** A built-in timer for high-intensity interval training (HIIT) sessions.
+* **🤖 Personalized Workout Plans:** Generates custom weekly workouts from your profile (age, gender, goals, schedule, and environment), with fallback plans when offline.
+* **🔥 30-Day Challenges:** Includes focused challenge tracks like Abs, Pushups, Pull-Ups, and Face Exercises.
+* **📈 Workout History & Streaks:** Tracks completed sessions with streaks, weekly/monthly stats, and calendar-style history views.
+* **✅ Exercise Progress Tracking:** Lets you mark exercises complete and see per-workout progress indicators.
+* **🔔 Smart Reminders:** Optional workout, hydration, and sleep notifications to help you stay consistent.
+* **⏱️ Interval Training Timer:** Built-in HIIT timer with configurable rounds, work duration, and rest duration.
 
 ---
 
