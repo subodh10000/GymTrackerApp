@@ -2,9 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+	<key>NSPrivacyPolicyURL</key>
+	<string>https://subodh10000.github.io/gymtracker-privacy-policy/privacy-policy.html</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>We send workout reminders and hydration alerts to help you stay on track with your fitness goals.</string>
 </dict>
 </plist>
