@@ -20,7 +20,6 @@ struct IntervalTrainingView: View {
                     VStack(spacing: 20) {
                         presetsSection
                         configurationSection
-                        summarySection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 10)
@@ -82,38 +81,6 @@ struct IntervalTrainingView: View {
         }
     }
     
-    private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Summary")
-                .font(.headline)
-                .foregroundColor(AppTheme.textPrimaryColor)
-            
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Total time")
-                        .font(.subheadline)
-                        .foregroundColor(AppTheme.textSecondaryColor)
-                    Text(totalDurationString)
-                        .font(.title3.weight(.bold))
-                        .foregroundColor(AppTheme.textPrimaryColor)
-                }
-                Spacer()
-                HStack(spacing: 6) {
-                    Text("\(rounds)")
-                        .font(.headline)
-                        .foregroundColor(AppTheme.primaryColor)
-                    Text("rounds")
-                        .font(.subheadline)
-                        .foregroundColor(AppTheme.textSecondaryColor)
-                }
-            }
-        }
-        .padding(16)
-        .background(AppTheme.cardBackgroundColor)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
-    }
-    
     private var startButton: some View {
         Button(action: {
             // Capture current values when button is clicked
@@ -142,13 +109,6 @@ struct IntervalTrainingView: View {
             .cornerRadius(16)
             .shadow(color: AppTheme.primaryColor.opacity(0.4), radius: 12, x: 0, y: 6)
         }
-    }
-    
-    private var totalDurationString: String {
-        let totalSeconds = rounds * workDuration + max(0, rounds - 1) * restDuration
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return minutes > 0 ? "\(minutes)m \(seconds)s" : "\(seconds)s"
     }
     
     private func applyPreset(rounds: Int, work: Int, rest: Int) {

@@ -346,13 +346,13 @@ class UserManager: ObservableObject {
         }
         
         let calendar = Calendar.current
-        var seenDays = Set(workoutHistory.map { calendar.startOfDay(for: $0.date) })
+        var seenDays = Set(workoutHistory.map { normalizedWorkoutDay(for: $0.date, calendar: calendar) })
         
         // Migrate from UserDefaults completionDates to SwiftData workoutHistory
         if let savedData = UserDefaults.standard.data(forKey: "completionDates"),
            let decodedData = try? JSONDecoder().decode([Date].self, from: savedData) {
             for date in decodedData {
-                let normalizedDate = calendar.startOfDay(for: date)
+                let normalizedDate = normalizedWorkoutDay(for: date, calendar: calendar)
                 guard !seenDays.contains(normalizedDate) else { continue }
                 
                 let history = WorkoutHistory(date: normalizedDate, workoutDay: "Workout", workoutFocus: "Completed", workoutId: nil)
@@ -369,7 +369,7 @@ class UserManager: ObservableObject {
             decoder.dateDecodingStrategy = .iso8601
             if let decodedData = try? decoder.decode([WorkoutHistory].self, from: savedData) {
                 for history in decodedData {
-                    let normalizedDate = calendar.startOfDay(for: history.date)
+                    let normalizedDate = normalizedWorkoutDay(for: history.date, calendar: calendar)
                     guard !seenDays.contains(normalizedDate) else { continue }
                     
                     var normalizedHistory = history
@@ -616,11 +616,11 @@ class UserManager: ObservableObject {
         
         if allCompleted {
             // Normalize today's date to start of day for accurate comparison
-            let normalizedToday = calendar.startOfDay(for: today)
+            let normalizedToday = normalizedWorkoutDay(for: today, calendar: calendar)
             
             // Check if we already have a workout history for today using normalized dates
-            if let existingIndex = workoutHistory.firstIndex(where: { 
-                calendar.startOfDay(for: $0.date) == normalizedToday 
+            if let existingIndex = workoutHistory.firstIndex(where: {
+                calendar.isDate($0.date, inSameDayAs: normalizedToday)
             }) {
                 // Update existing entry - preserve the original ID
                 let existingHistory = workoutHistory[existingIndex]
@@ -645,9 +645,9 @@ class UserManager: ObservableObject {
             // Strict one-workout-per-day:
             // only remove today's entry if it belongs to this workout.
             // This prevents accidental deletion when user toggles a different workout.
-            let normalizedToday = calendar.startOfDay(for: today)
+            let normalizedToday = normalizedWorkoutDay(for: today, calendar: calendar)
             workoutHistory.removeAll(where: {
-                guard calendar.startOfDay(for: $0.date) == normalizedToday else { return false }
+                guard calendar.isDate($0.date, inSameDayAs: normalizedToday) else { return false }
                 
                 if let historyWorkoutId = $0.workoutId {
                     return historyWorkoutId == workout.id
@@ -662,13 +662,19 @@ class UserManager: ObservableObject {
     // Get workout history for a specific date (with normalized date comparison)
     func getWorkoutHistory(for date: Date) -> WorkoutHistory? {
         let calendar = Calendar.current
-        let normalizedDate = calendar.startOfDay(for: date)
+        let normalizedDate = normalizedWorkoutDay(for: date, calendar: calendar)
         
         return workoutHistory.first { history in
-            let normalizedHistoryDate = calendar.startOfDay(for: history.date)
-            return normalizedHistoryDate == normalizedDate
+            calendar.isDate(history.date, inSameDayAs: normalizedDate)
         }
     }
+    // Store workout completions at local noon to avoid day/month drift across
+    // timezone or DST transitions while still preserving same-day semantics.
+    private func normalizedWorkoutDay(for date: Date, calendar: Calendar = Calendar.current) -> Date {
+        let startOfDay = calendar.startOfDay(for: date)
+        return calendar.date(byAdding: .hour, value: 12, to: startOfDay) ?? startOfDay
+    }
+
     
     func resetAllWorkouts() {
         for i in 0..<workouts.count {
@@ -1092,13 +1098,13 @@ class UserManager: ObservableObject {
             // Normalize all dates and enforce strict one-entry-per-day
             let normalizedHistory = stored.map { storedHistory in
                 var history = storedHistory.toWorkoutHistory()
-                history.date = calendar.startOfDay(for: history.date)
+                history.date = normalizedWorkoutDay(for: history.date, calendar: calendar)
                 return history
             }
             
             var dedupedByDay: [Date: WorkoutHistory] = [:]
             for history in normalizedHistory {
-                let day = calendar.startOfDay(for: history.date)
+                let day = normalizedWorkoutDay(for: history.date, calendar: calendar)
                 
                 if let existing = dedupedByDay[day] {
                     // Prefer entry with workoutId because it carries stronger linkage.
