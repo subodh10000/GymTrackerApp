@@ -11,16 +11,16 @@ import SwiftUI
 
 class NotificationManager {
     static let shared = NotificationManager()
-    
+
     func requestAuthorization(userManager: UserManager) {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if granted {
                 #if DEBUG
                 print("✅ Permission granted")
                 #endif
-                self.scheduleWorkoutReminder()
-                self.scheduleHydrationReminder()
-                self.scheduleSleepReminder()
+                if userManager.notificationsEnabled {
+                    self.scheduleAllNotifications()
+                }
             } else {
                 #if DEBUG
                 print("❌ Permission denied")
@@ -32,6 +32,20 @@ class NotificationManager {
                 #endif
             }
         }
+    }
+
+    func scheduleAllNotifications() {
+        scheduleWorkoutReminder()
+        scheduleHydrationReminder()
+        scheduleSleepReminder()
+    }
+
+    func cancelAllNotifications() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        #if DEBUG
+        print("🔕 All notifications cancelled")
+        #endif
     }
 
     func scheduleWorkoutReminder() {

@@ -240,7 +240,20 @@ class UserManager: ObservableObject {
     // This property will now control whether the main app or onboarding is shown.
     @Published var hasCompletedOnboarding: Bool = false
 
+    @Published var notificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(notificationsEnabled, forKey: "notificationsEnabled")
+            if notificationsEnabled {
+                NotificationManager.shared.scheduleAllNotifications()
+            } else {
+                NotificationManager.shared.cancelAllNotifications()
+            }
+        }
+    }
+
     init() {
+        self.notificationsEnabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+
         // Load UserDefaults data immediately
         loadProfile()
         loadWorkouts()
@@ -885,6 +898,7 @@ class UserManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "completionDates")
         UserDefaults.standard.removeObject(forKey: "workoutHistoryMigratedToSwiftData")
         UserDefaults.standard.removeObject(forKey: "lastWeeklyResetDate")
+        UserDefaults.standard.removeObject(forKey: "notificationsEnabled")
         
         cancelAutomaticRetry()
         pendingAIWorkouts = []
@@ -909,6 +923,7 @@ class UserManager: ObservableObject {
         completionDates = []
         workoutHistory = []
         hasCompletedOnboarding = false
+        notificationsEnabled = true
         
         #if DEBUG
         print("✅ App has been reset.")
@@ -928,6 +943,7 @@ class UserManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "completionDates")
         UserDefaults.standard.removeObject(forKey: "workoutHistoryMigratedToSwiftData")
         UserDefaults.standard.removeObject(forKey: "lastWeeklyResetDate")
+        UserDefaults.standard.removeObject(forKey: "notificationsEnabled")
         
         cancelAutomaticRetry()
         pendingAIWorkouts = []
@@ -952,6 +968,7 @@ class UserManager: ObservableObject {
         completionDates = []
         workoutHistory = []
         hasCompletedOnboarding = false
+        notificationsEnabled = true
         
         #if DEBUG
         print("✅ Account has been permanently deleted.")

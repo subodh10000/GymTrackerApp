@@ -108,17 +108,32 @@ struct HomeView: View {
 
                 Spacer()
 
-                Image("lad")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 130)
-                    .clipShape(Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 3)
-                    )
-                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                    .padding(.trailing, 20)
+                VStack(spacing: 12) {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            userManager.notificationsEnabled.toggle()
+                        }
+                    } label: {
+                        Image(systemName: userManager.notificationsEnabled ? "bell.fill" : "bell.slash.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 34, height: 34)
+                            .background(Color.white.opacity(userManager.notificationsEnabled ? 0.25 : 0.12))
+                            .clipShape(Circle())
+                    }
+
+                    Image("lad")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 110)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.3), lineWidth: 3)
+                        )
+                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                }
+                .padding(.trailing, 20)
             }
         }
         .cornerRadius(24)
