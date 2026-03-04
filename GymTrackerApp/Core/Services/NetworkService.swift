@@ -14,17 +14,7 @@ class NetworkService {
     private let requestTimeout: TimeInterval = 30.0
     
     private init() {
-        // URL from Config.xcconfig via Info.plist (BACKEND_URL) — Config.xcconfig is gitignored
-        let urlString = Bundle.main.infoDictionary?["BackendURL"] as? String ?? ""
-        if !urlString.isEmpty, let url = URL(string: urlString), url.host() != nil {
-            self.baseURL = url
-        } else {
-            // Fallback when Config.xcconfig is missing (e.g. fresh clone) — requests will fail until configured
-            self.baseURL = URL(string: "https://example.com")!
-            #if DEBUG
-            print("⚠️ Backend URL not configured. Copy Config.xcconfig.example to Config.xcconfig and set BACKEND_URL.")
-            #endif
-        }
+        self.baseURL = URL(string: "https://convert-and-get-a76avtriqq-uc.a.run.app")!
     }
 
     func generateInitialPlan(for profile: UserProfile, completion: @escaping (Result<[Workout], Error>) -> Void) {
