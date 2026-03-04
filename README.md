@@ -62,11 +62,17 @@ GymTrackerApp is a personal trainer in your pocket. It generates custom weekly w
    cd GymTrackerApp
    ```
 
-2. **Open in Xcode**
+2. **Configure the backend URL**
+   ```bash
+   cp Config.xcconfig.example Config.xcconfig
+   ```
+   Edit `Config.xcconfig` and set `BACKEND_URL` to your Cloud Run service URL. This file is gitignored and will not be committed.
+
+3. **Open in Xcode**
    - Open `GymTrackerApp.xcodeproj` in Xcode
    - Build and run on a simulator or device
 
-3. **Backend**
+4. **Backend**
    - Workout generation uses a hosted Cloud Run service
    - The app includes a bundled fallback plan (`hardcode.json`) when the network is unavailable
 

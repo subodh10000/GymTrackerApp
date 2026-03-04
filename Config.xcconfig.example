@@ -1,0 +1,3 @@
+// Copy this file to Config.xcconfig and replace with your backend URL
+// Config.xcconfig is gitignored and will not be committed
+BACKEND_URL = https://YOUR_CLOUD_RUN_SERVICE.run.app

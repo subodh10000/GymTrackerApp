@@ -14,21 +14,15 @@ class NetworkService {
     private let requestTimeout: TimeInterval = 30.0
     
     private init() {
-        // Safe URL initialization with fallback
-        if let url = URL(string: "https://convert-and-get-a76avtriqq-uc.a.run.app") {
+        // URL from Config.xcconfig via Info.plist (BACKEND_URL) — Config.xcconfig is gitignored
+        let urlString = Bundle.main.infoDictionary?["BackendURL"] as? String ?? ""
+        if !urlString.isEmpty, let url = URL(string: urlString), url.host() != nil {
             self.baseURL = url
-        } else if let fallbackURL = URL(string: "https://example.com") {
-            // Fallback URL (should never happen, but prevents crash)
-            self.baseURL = fallbackURL
-            #if DEBUG
-            print("⚠️ Warning: Invalid baseURL, using fallback")
-            #endif
         } else {
-            // Absolute last resort - this should never happen
-            // If this fails, the app will crash, but it's better than a silent failure
-            self.baseURL = URL(string: "http://localhost")!
+            // Fallback when Config.xcconfig is missing (e.g. fresh clone) — requests will fail until configured
+            self.baseURL = URL(string: "https://example.com")!
             #if DEBUG
-            print("⚠️ Critical: All URL fallbacks failed, using localhost")
+            print("⚠️ Backend URL not configured. Copy Config.xcconfig.example to Config.xcconfig and set BACKEND_URL.")
             #endif
         }
     }
