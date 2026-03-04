@@ -93,7 +93,7 @@ struct HomeView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "flame.fill")
                                 .font(.system(size: 14))
-                            Text("\(stats.currentStreak) day streak")
+                            Text("\(stats.currentStreak) week streak")
                                 .font(.system(size: 14, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -136,7 +136,7 @@ struct HomeView: View {
     
     private var workoutStats: WorkoutStats? {
         guard !userManager.workoutHistory.isEmpty else { return nil }
-        return WorkoutStats.calculate(from: userManager.workoutHistory)
+        return WorkoutStats.calculate(from: userManager.workoutHistory, weeklyGoal: userManager.profile?.daysPerWeek ?? 4)
     }
 
     private var nutritionReminders: some View {

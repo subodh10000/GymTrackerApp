@@ -48,113 +48,137 @@ private struct HistoryDateSelection: Identifiable {
 
 struct WorkoutStats: Equatable {
     let totalWorkouts: Int
-    let currentStreak: Int
-    let longestStreak: Int
+    let currentStreak: Int      // consecutive weeks meeting the weekly goal
+    let longestStreak: Int      // best consecutive weeks
     let thisWeekCount: Int
     let thisMonthCount: Int
     let averagePerWeek: Double
-    
-    // Cache key to avoid recalculation
+    let weeklyGoal: Int         // the user's daysPerWeek target
+    let weeklyGoalMet: Bool     // whether this week's goal is already met
+
     private static var lastHistoryCount: Int = -1
     private static var lastHistoryHash: Int = 0
+    private static var lastGoal: Int = -1
     private static var cachedStats: WorkoutStats?
-    
-    static func calculate(from history: [WorkoutHistory]) -> WorkoutStats {
-        // Quick cache check based on count and hash
+
+    static func calculate(from history: [WorkoutHistory], weeklyGoal: Int = 4) -> WorkoutStats {
         let historyHash = history.map { $0.date.timeIntervalSince1970 }.hashValue
-        if history.count == lastHistoryCount && historyHash == lastHistoryHash, let cached = cachedStats {
+        if history.count == lastHistoryCount && historyHash == lastHistoryHash && weeklyGoal == lastGoal,
+           let cached = cachedStats {
             return cached
         }
-        
-        let stats = performCalculation(from: history)
-        
-        // Update cache
+
+        let stats = performCalculation(from: history, weeklyGoal: max(weeklyGoal, 1))
+
         lastHistoryCount = history.count
         lastHistoryHash = historyHash
+        lastGoal = weeklyGoal
         cachedStats = stats
-        
+
         return stats
     }
-    
-    private static func performCalculation(from history: [WorkoutHistory]) -> WorkoutStats {
-        let calendar = Calendar.current
+
+    private static func performCalculation(from history: [WorkoutHistory], weeklyGoal: Int) -> WorkoutStats {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday
         let today = calendar.startOfDay(for: Date())
-        
-        // Sort dates
+
         let sortedDates = history.map { calendar.startOfDay(for: $0.date) }.sorted()
         let uniqueDates = Array(Set(sortedDates)).sorted()
-        
-        // Total workouts
+
         let totalWorkouts = uniqueDates.count
-        
-        // Current streak
-        var currentStreak = 0
-        var checkDate = today
-        
-        // Check if worked out today or yesterday (allow for grace period)
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
-        let hasRecentWorkout = uniqueDates.contains(today) || uniqueDates.contains(yesterday)
-        
-        if hasRecentWorkout {
-            // Start counting from the most recent workout day
-            let startDate = uniqueDates.contains(today) ? today : yesterday
-            checkDate = startDate
-            
-            while uniqueDates.contains(checkDate) {
-                currentStreak += 1
-                guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
-                checkDate = previousDay
-            }
-        }
-        
-        // Longest streak
-        var longestStreak = 0
-        var tempStreak = 0
-        var previousDate: Date?
-        
-        for date in uniqueDates {
-            if let prev = previousDate {
-                let dayDiff = calendar.dateComponents([.day], from: prev, to: date).day ?? 0
-                if dayDiff == 1 {
-                    tempStreak += 1
-                } else {
-                    longestStreak = max(longestStreak, tempStreak)
-                    tempStreak = 1
-                }
-            } else {
-                tempStreak = 1
-            }
-            previousDate = date
-        }
-        longestStreak = max(longestStreak, tempStreak)
-        
+
         // This week count
         let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
         let thisWeekCount = uniqueDates.filter { $0 >= startOfWeek && $0 <= today }.count
-        
+        let weeklyGoalMet = thisWeekCount >= weeklyGoal
+
+        // Group workouts by calendar week → count per week
+        // Key: (yearForWeekOfYear, weekOfYear)
+        var workoutsPerWeek: [Date: Int] = [:]
+        for date in uniqueDates {
+            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date))!
+            workoutsPerWeek[weekStart, default: 0] += 1
+        }
+
+        let sortedWeekStarts = workoutsPerWeek.keys.sorted()
+
+        // Current weekly streak: walk backwards from the most recent completed week
+        // The current (in-progress) week gets special treatment:
+        //   - If goal already met this week → include it and keep counting back
+        //   - If goal not yet met → skip it (it's still in progress), start from last week
+        var currentStreak = 0
+        var checkWeek = startOfWeek
+
+        if weeklyGoalMet {
+            currentStreak = 1
+            guard let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: checkWeek) else {
+                return buildResult(totalWorkouts: totalWorkouts, currentStreak: currentStreak, longestStreak: currentStreak, thisWeekCount: thisWeekCount, thisMonthCount: 0, averagePerWeek: 0, weeklyGoal: weeklyGoal, weeklyGoalMet: weeklyGoalMet)
+            }
+            checkWeek = previousWeek
+        } else {
+            guard let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: checkWeek) else {
+                return buildResult(totalWorkouts: totalWorkouts, currentStreak: 0, longestStreak: 0, thisWeekCount: thisWeekCount, thisMonthCount: 0, averagePerWeek: 0, weeklyGoal: weeklyGoal, weeklyGoalMet: weeklyGoalMet)
+            }
+            checkWeek = previousWeek
+        }
+
+        while let count = workoutsPerWeek[checkWeek], count >= weeklyGoal {
+            currentStreak += 1
+            guard let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: checkWeek) else { break }
+            checkWeek = previousWeek
+        }
+
+        // Longest weekly streak
+        var longestStreak = 0
+        var tempStreak = 0
+        for weekStart in sortedWeekStarts {
+            if (workoutsPerWeek[weekStart] ?? 0) >= weeklyGoal {
+                tempStreak += 1
+                longestStreak = max(longestStreak, tempStreak)
+            } else {
+                tempStreak = 0
+            }
+        }
+
         // This month count
         let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: today))!
         let thisMonthCount = uniqueDates.filter { $0 >= startOfMonth && $0 <= today }.count
-        
+
         // Average per week (last 4 weeks)
         let fourWeeksAgo = calendar.date(byAdding: .day, value: -28, to: today)!
         let recentCount = uniqueDates.filter { $0 >= fourWeeksAgo && $0 <= today }.count
         let averagePerWeek = Double(recentCount) / 4.0
-        
-        return WorkoutStats(
+
+        return buildResult(
             totalWorkouts: totalWorkouts,
             currentStreak: currentStreak,
             longestStreak: longestStreak,
             thisWeekCount: thisWeekCount,
             thisMonthCount: thisMonthCount,
-            averagePerWeek: averagePerWeek
+            averagePerWeek: averagePerWeek,
+            weeklyGoal: weeklyGoal,
+            weeklyGoalMet: weeklyGoalMet
         )
     }
-    
-    // Clear cache when app goes to background or data changes significantly
+
+    private static func buildResult(totalWorkouts: Int, currentStreak: Int, longestStreak: Int, thisWeekCount: Int, thisMonthCount: Int, averagePerWeek: Double, weeklyGoal: Int, weeklyGoalMet: Bool) -> WorkoutStats {
+        WorkoutStats(
+            totalWorkouts: totalWorkouts,
+            currentStreak: currentStreak,
+            longestStreak: longestStreak,
+            thisWeekCount: thisWeekCount,
+            thisMonthCount: thisMonthCount,
+            averagePerWeek: averagePerWeek,
+            weeklyGoal: weeklyGoal,
+            weeklyGoalMet: weeklyGoalMet
+        )
+    }
+
     static func invalidateCache() {
         lastHistoryCount = -1
         lastHistoryHash = 0
+        lastGoal = -1
         cachedStats = nil
     }
 }
@@ -166,7 +190,7 @@ struct HomeHistorySection: View {
     @State private var showFullHistory = false
     
     private var stats: WorkoutStats {
-        WorkoutStats.calculate(from: userManager.workoutHistory)
+        WorkoutStats.calculate(from: userManager.workoutHistory, weeklyGoal: userManager.profile?.daysPerWeek ?? 4)
     }
     
     private var hasHistory: Bool {
@@ -180,24 +204,37 @@ struct HomeHistorySection: View {
         return days
     }
     
+    private var weeklyGoalRemaining: Int {
+        max(0, (userManager.profile?.daysPerWeek ?? 4) - stats.thisWeekCount)
+    }
+
     private var motivationalMessage: String {
         if !hasHistory {
             return "Complete your first workout to start tracking!"
         }
-        
+
         guard let days = daysSinceLastWorkout else { return "" }
-        
+
+        if stats.weeklyGoalMet {
+            return "Weekly goal crushed! You're on fire! 💪"
+        }
+
+        let streakVerb = stats.currentStreak > 0 ? "keep" : "start"
+
         switch days {
         case 0:
+            if weeklyGoalRemaining > 0 {
+                return "\(weeklyGoalRemaining) more this week to \(streakVerb) your streak!"
+            }
             return "Great job today! Keep it up! 💪"
         case 1:
-            return "Yesterday was strong! Ready for today?"
+            return "Yesterday was strong! \(weeklyGoalRemaining) left this week."
         case 2...3:
-            return "Time to get back on track!"
+            return "Time to get back — \(weeklyGoalRemaining) more to hit your goal!"
         case 4...7:
-            return "Your streak is waiting! Let's go! 🔥"
+            return "Don't lose your streak! Get moving! 🔥"
         default:
-            return "Welcome back! Every day is a fresh start."
+            return "Welcome back! Every week is a fresh start."
         }
     }
     
@@ -234,16 +271,16 @@ struct HomeHistorySection: View {
                 HStack(spacing: 12) {
                     QuickStatCard(
                         value: "\(stats.currentStreak)",
-                        label: "Day Streak",
+                        label: "Week Streak",
                         icon: "flame.fill",
                         color: stats.currentStreak > 0 ? Color(hex: "F97316") : AppTheme.textSecondaryColor
                     )
                     
                     QuickStatCard(
-                        value: "\(stats.thisWeekCount)",
+                        value: "\(stats.thisWeekCount)/\(stats.weeklyGoal)",
                         label: "This Week",
                         icon: "calendar",
-                        color: AppTheme.primaryColor
+                        color: stats.weeklyGoalMet ? Color(hex: "22C55E") : AppTheme.primaryColor
                     )
                     
                     QuickStatCard(
@@ -254,24 +291,28 @@ struct HomeHistorySection: View {
                     )
                 }
                 
-                // Motivational message if needed
-                if let days = daysSinceLastWorkout, days > 1 {
-                    HStack(spacing: 8) {
-                        Image(systemName: days > 3 ? "exclamationmark.circle.fill" : "info.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(days > 3 ? Color(hex: "F97316") : AppTheme.primaryColor)
-                        
-                        Text(motivationalMessage)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(AppTheme.textSecondaryColor)
-                        
-                        Spacer()
+                // Motivational message
+                if let days = daysSinceLastWorkout {
+                    let showUrgent = days > 3
+                    let showMessage = days > 1 || stats.weeklyGoalMet || weeklyGoalRemaining > 0
+                    if showMessage {
+                        HStack(spacing: 8) {
+                            Image(systemName: stats.weeklyGoalMet ? "checkmark.seal.fill" : (showUrgent ? "exclamationmark.circle.fill" : "info.circle.fill"))
+                                .font(.system(size: 14))
+                                .foregroundColor(stats.weeklyGoalMet ? Color(hex: "22C55E") : (showUrgent ? Color(hex: "F97316") : AppTheme.primaryColor))
+
+                            Text(motivationalMessage)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(AppTheme.textSecondaryColor)
+
+                            Spacer()
+                        }
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill((stats.weeklyGoalMet ? Color(hex: "22C55E") : (showUrgent ? Color(hex: "F97316") : AppTheme.primaryColor)).opacity(0.08))
+                        )
                     }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill((days > 3 ? Color(hex: "F97316") : AppTheme.primaryColor).opacity(0.08))
-                    )
                 }
                 
                 // Mini calendar (current week)
@@ -347,37 +388,47 @@ struct QuickStatCard: View {
 
 struct MiniWeekCalendar: View {
     let workoutHistory: [WorkoutHistory]
-    private let calendar = Calendar.current
-    
+
+    private var mondayCalendar: Calendar {
+        var cal = Calendar.current
+        cal.firstWeekday = 2 // Monday
+        return cal
+    }
+
     private var weekDays: [(date: Date, label: String)] {
-        let today = Date()
+        let cal = mondayCalendar
+        let today = cal.startOfDay(for: Date())
+        let startOfWeek = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+
         var days: [(Date, String)] = []
-        
-        for i in -6...0 {
-            if let date = calendar.date(byAdding: .day, value: i, to: today) {
-                // Use cached formatters instead of creating new ones
-                let label = i == 0 
-                    ? DateFormatters.today.string(from: date)
+        for i in 0..<7 {
+            if let date = cal.date(byAdding: .day, value: i, to: startOfWeek) {
+                let dayStart = cal.startOfDay(for: date)
+                let label = cal.isDateInToday(date)
+                    ? "Today"
                     : DateFormatters.dayOfWeek.string(from: date)
-                days.append((calendar.startOfDay(for: date), label))
+                days.append((dayStart, label))
             }
         }
         return days
     }
     
     private func hasWorkout(on date: Date) -> Bool {
-        let normalizedDate = calendar.startOfDay(for: date)
-        return workoutHistory.contains { calendar.startOfDay(for: $0.date) == normalizedDate }
+        let cal = mondayCalendar
+        let normalizedDate = cal.startOfDay(for: date)
+        return workoutHistory.contains { cal.startOfDay(for: $0.date) == normalizedDate }
     }
-    
+
     var body: some View {
+        let cal = mondayCalendar
         HStack(spacing: 8) {
             ForEach(weekDays, id: \.date) { day in
+                let isToday = cal.isDateInToday(day.date)
                 VStack(spacing: 6) {
                     Text(day.label)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(AppTheme.textSecondaryColor)
-                    
+                        .font(.system(size: 10, weight: isToday ? .bold : .medium))
+                        .foregroundColor(isToday ? AppTheme.primaryColor : AppTheme.textSecondaryColor)
+
                     ZStack {
                         Circle()
                             .fill(hasWorkout(on: day.date) ?
@@ -386,13 +437,13 @@ struct MiniWeekCalendar: View {
                                   LinearGradient(colors: [Color.gray.opacity(0.15)],
                                                startPoint: .topLeading, endPoint: .bottomTrailing))
                             .frame(width: 36, height: 36)
-                        
+
                         if hasWorkout(on: day.date) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.white)
                         } else {
-                            Text("\(calendar.component(.day, from: day.date))")
+                            Text("\(cal.component(.day, from: day.date))")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(AppTheme.textSecondaryColor)
                         }
@@ -414,7 +465,7 @@ struct FullWorkoutHistoryView: View {
     @State private var selectedHistoryDate: HistoryDateSelection?
     
     private var stats: WorkoutStats {
-        WorkoutStats.calculate(from: userManager.workoutHistory)
+        WorkoutStats.calculate(from: userManager.workoutHistory, weeklyGoal: userManager.profile?.daysPerWeek ?? 4)
     }
     
     var body: some View {
@@ -500,7 +551,7 @@ struct StatsOverviewSection: View {
                 
                 // Other stats
                 VStack(spacing: 12) {
-                    StatRow(icon: "trophy.fill", label: "Best Streak", value: "\(stats.longestStreak) days", color: Color(hex: "EAB308"))
+                    StatRow(icon: "trophy.fill", label: "Best Streak", value: "\(stats.longestStreak) wks", color: Color(hex: "EAB308"))
                     StatRow(icon: "calendar", label: "This Month", value: "\(stats.thisMonthCount) workouts", color: AppTheme.primaryColor)
                     StatRow(icon: "chart.line.uptrend.xyaxis", label: "Weekly Avg", value: String(format: "%.1f", stats.averagePerWeek), color: AppTheme.secondaryColor)
                 }

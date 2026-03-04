@@ -221,7 +221,7 @@ struct WorkoutStatsCard: View {
     }
     
     private var stats: WorkoutStats {
-        WorkoutStats.calculate(from: userManager.workoutHistory)
+        WorkoutStats.calculate(from: userManager.workoutHistory, weeklyGoal: userManager.profile?.daysPerWeek ?? 4)
     }
     
     var body: some View {
@@ -264,14 +264,14 @@ struct WorkoutStatsCard: View {
                     
                     ProfileStatItem(
                         value: "\(stats.currentStreak)",
-                        label: "Streak",
+                        label: "Wk Streak",
                         icon: "flame.fill",
                         color: Color(hex: "F97316")
                     )
                     
                     ProfileStatItem(
                         value: "\(stats.longestStreak)",
-                        label: "Best",
+                        label: "Best Wk",
                         icon: "trophy.fill",
                         color: Color(hex: "EAB308")
                     )
