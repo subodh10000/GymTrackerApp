@@ -352,21 +352,29 @@ struct OnboardingTopBar: View {
 
 // MARK: - Step Container
 
-struct StepContainer<Content: View>: View {
+struct StepContainer<Content: View, Bottom: View>: View {
     let content: Content
+    let bottomView: Bottom
     
-    init(@ViewBuilder content: () -> Content) {
+    init(@ViewBuilder content: () -> Content, @ViewBuilder bottom: () -> Bottom) {
         self.content = content()
+        self.bottomView = bottom()
     }
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                content
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    content
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 20)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 20)
-            .padding(.bottom, 40)
+            
+            bottomView
+                .padding(.horizontal, 28)
+                .padding(.bottom, 16)
         }
     }
 }
@@ -379,25 +387,25 @@ struct WelcomeStep: View {
     
     var body: some View {
         StepContainer {
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 Spacer()
-                    .frame(height: 40)
+                    .frame(height: 20)
                 
                 // App icon with glow
                 ZStack {
                     Circle()
                         .fill(AppTheme.primaryGradient)
-                        .frame(width: 120, height: 120)
+                        .frame(width: 110, height: 110)
                         .shadow(color: AppTheme.primaryColor.opacity(0.5), radius: 30, x: 0, y: 10)
                     
                     Image(systemName: "dumbbell.fill")
-                        .font(.system(size: 50, weight: .bold))
+                        .font(.system(size: 46, weight: .bold))
                         .foregroundColor(.white)
                 }
                 .scaleEffect(showContent ? 1 : 0.5)
                 .opacity(showContent ? 1 : 0)
                 
-                VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     Text("Welcome to")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
@@ -422,25 +430,20 @@ struct WelcomeStep: View {
                 .offset(y: showContent ? 0 : 20)
                 
                 Spacer()
-                    .frame(height: 60)
+                    .frame(height: 24)
                 
                 // Feature highlights
-                VStack(spacing: 20) {
+                VStack(spacing: 14) {
                     FeatureRow(icon: "sparkles", text: "AI-powered workout plans", color: AppTheme.primaryColor)
                     FeatureRow(icon: "chart.line.uptrend.xyaxis", text: "Track your progress", color: AppTheme.secondaryColor)
                     FeatureRow(icon: "figure.strengthtraining.traditional", text: "Customized for your goals", color: Color(hex: "F97316"))
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 30)
-                
-                Spacer()
-                    .frame(height: 40)
-                
-                // Continue button
-                PrimaryButton(title: "Let's Get Started", action: onContinue)
-                    .opacity(showContent ? 1 : 0)
-                    .offset(y: showContent ? 0 : 20)
             }
+        } bottom: {
+            PrimaryButton(title: "Let's Get Started", action: onContinue)
+                .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1)) {
@@ -494,9 +497,9 @@ struct NameStep: View {
 
     var body: some View {
         StepContainer {
-            VStack(spacing: 32) {
+            VStack(spacing: 28) {
                 Spacer()
-                    .frame(height: 60)
+                    .frame(height: 30)
                 
                 // Icon
                 ZStack {
@@ -531,7 +534,7 @@ struct NameStep: View {
                 .offset(y: showContent ? 0 : 15)
 
                 Spacer()
-                    .frame(height: 20)
+                    .frame(height: 16)
                 
                 // Name input
                     VStack(alignment: .leading, spacing: 8) {
@@ -561,12 +564,10 @@ struct NameStep: View {
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 20)
-                
-                Spacer()
-                
-                PrimaryButton(title: "Continue", action: onContinue, isEnabled: canContinue)
-                    .opacity(showContent ? 1 : 0)
             }
+        } bottom: {
+            PrimaryButton(title: "Continue", action: onContinue, isEnabled: canContinue)
+                .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
@@ -588,9 +589,9 @@ struct GenderStep: View {
 
     var body: some View {
         StepContainer {
-            VStack(spacing: 32) {
+            VStack(spacing: 28) {
                 Spacer()
-                    .frame(height: 60)
+                    .frame(height: 30)
                 
                 // Icon
                 ZStack {
@@ -631,7 +632,7 @@ struct GenderStep: View {
                 .offset(y: showContent ? 0 : 15)
                 
                 Spacer()
-                    .frame(height: 30)
+                    .frame(height: 16)
                 
                 // Gender selection
                 HStack(spacing: 16) {
@@ -659,12 +660,10 @@ struct GenderStep: View {
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 20)
-                
-                Spacer()
-                
-                PrimaryButton(title: "Continue", action: onContinue)
-                    .opacity(showContent ? 1 : 0)
             }
+        } bottom: {
+            PrimaryButton(title: "Continue", action: onContinue)
+                .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
@@ -726,9 +725,9 @@ struct BodyMetricsStep: View {
 
     var body: some View {
         StepContainer {
-            VStack(spacing: 28) {
+            VStack(spacing: 20) {
                 Spacer()
-                    .frame(height: 30)
+                    .frame(height: 10)
                 
                 VStack(spacing: 12) {
                     Text("Your Body Metrics")
@@ -742,9 +741,6 @@ struct BodyMetricsStep: View {
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 15)
-                
-                Spacer()
-                    .frame(height: 10)
                 
                 // Age selector
                 MetricCard(
@@ -795,12 +791,10 @@ struct BodyMetricsStep: View {
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 30)
-                
-                Spacer()
-                
-                PrimaryButton(title: "Continue", action: onContinue)
-                    .opacity(showContent ? 1 : 0)
             }
+        } bottom: {
+            PrimaryButton(title: "Continue", action: onContinue)
+                .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
@@ -935,9 +929,9 @@ struct FitnessLevelStep: View {
     
     var body: some View {
         StepContainer {
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                         Spacer()
-                    .frame(height: 40)
+                    .frame(height: 16)
                 
                 VStack(spacing: 12) {
                     Text("What's your fitness level?")
@@ -952,9 +946,6 @@ struct FitnessLevelStep: View {
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 15)
-                
-                Spacer()
-                    .frame(height: 20)
                 
                 VStack(spacing: 14) {
                     ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
@@ -973,12 +964,10 @@ struct FitnessLevelStep: View {
                         .offset(y: showContent ? 0 : CGFloat(20 + index * 10))
                     }
                 }
-                
-                Spacer()
-                
-                PrimaryButton(title: "Continue", action: onContinue)
-                    .opacity(showContent ? 1 : 0)
             }
+        } bottom: {
+            PrimaryButton(title: "Continue", action: onContinue)
+                .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
@@ -1068,9 +1057,9 @@ struct GoalStep: View {
 
     var body: some View {
         StepContainer {
-            VStack(spacing: 28) {
+            VStack(spacing: 20) {
                 Spacer()
-                    .frame(height: 30)
+                    .frame(height: 10)
                 
                 VStack(spacing: 12) {
                     Text("What's your main goal?")
@@ -1085,10 +1074,7 @@ struct GoalStep: View {
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 15)
                 
-                Spacer()
-                    .frame(height: 10)
-                
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     ForEach(Array(goals.enumerated()), id: \.offset) { index, goalData in
                         GoalOptionCard(
                             goal: goalData.0,
@@ -1106,12 +1092,10 @@ struct GoalStep: View {
                         .offset(y: showContent ? 0 : CGFloat(15 + index * 8))
                     }
                 }
-                
-                Spacer()
-                
-                PrimaryButton(title: "Continue", action: onContinue)
-                    .opacity(showContent ? 1 : 0)
             }
+        } bottom: {
+            PrimaryButton(title: "Continue", action: onContinue)
+                .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
@@ -1197,9 +1181,9 @@ struct ScheduleStep: View {
     
     var body: some View {
         StepContainer {
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 Spacer()
-                    .frame(height: 40)
+                    .frame(height: 16)
                 
                 VStack(spacing: 12) {
                     Text("Plan your schedule")
@@ -1213,9 +1197,6 @@ struct ScheduleStep: View {
         }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 15)
-
-                Spacer()
-                    .frame(height: 20)
 
                 // Days per week
                 VStack(alignment: .leading, spacing: 16) {
@@ -1299,12 +1280,10 @@ struct ScheduleStep: View {
                 )
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 25)
-                
-                Spacer()
-                
-                PrimaryButton(title: "Continue", action: onContinue)
-                    .opacity(showContent ? 1 : 0)
             }
+        } bottom: {
+            PrimaryButton(title: "Continue", action: onContinue)
+                .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
@@ -1384,9 +1363,9 @@ struct EnvironmentStep: View {
 
     var body: some View {
         StepContainer {
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 Spacer()
-                    .frame(height: 40)
+                    .frame(height: 16)
                 
                 VStack(spacing: 12) {
                     Text("Where will you train?")
@@ -1400,9 +1379,6 @@ struct EnvironmentStep: View {
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : 15)
-                
-                Spacer()
-                    .frame(height: 20)
                 
                 VStack(spacing: 14) {
                     ForEach(Array(environments.enumerated()), id: \.offset) { index, env in
@@ -1422,40 +1398,37 @@ struct EnvironmentStep: View {
                         .offset(y: showContent ? 0 : CGFloat(20 + index * 10))
                     }
                 }
-                
-                Spacer()
-                
-                // Final CTA button
-                Button(action: onCreatePlan) {
-                    HStack(spacing: 12) {
-                        if isGenerating {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.9)
-                        } else {
-                            Text("Create My Plan")
-                                .font(.system(size: 18, weight: .bold))
-                            
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 16, weight: .bold))
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(
-                        LinearGradient(
-                            colors: [AppTheme.primaryColor, Color(hex: "8B5CF6")],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(16)
-                    .shadow(color: AppTheme.primaryColor.opacity(0.4), radius: 16, x: 0, y: 8)
-                }
-                .disabled(isGenerating)
-                .opacity(showContent ? 1 : 0)
             }
+        } bottom: {
+            Button(action: onCreatePlan) {
+                HStack(spacing: 12) {
+                    if isGenerating {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.9)
+                    } else {
+                        Text("Create My Plan")
+                            .font(.system(size: 18, weight: .bold))
+                        
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16, weight: .bold))
+                    }
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(
+                    LinearGradient(
+                        colors: [AppTheme.primaryColor, Color(hex: "8B5CF6")],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(16)
+                .shadow(color: AppTheme.primaryColor.opacity(0.4), radius: 16, x: 0, y: 8)
+            }
+            .disabled(isGenerating)
+            .opacity(showContent ? 1 : 0)
         }
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
