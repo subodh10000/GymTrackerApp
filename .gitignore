@@ -1,0 +1,82 @@
+# =========================
+# Sensitive / Secrets
+# =========================
+serviceAccountKey.json
+**/serviceAccountKey*.json
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+.env
+.env.*
+
+# =========================
+# Xcode
+# =========================
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+DerivedData/
+build/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.xccheckout
+*.xcscmblueprint
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# =========================
+# Swift Package Manager
+# =========================
+.build/
+.swiftpm/
+
+# =========================
+# CocoaPods / Carthage
+# =========================
+Pods/
+Carthage/Build/
+
+# =========================
+# fastlane
+# =========================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# =========================
+# macOS
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# =========================
+# Python (firebase-backend)
+# =========================
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+*.egg
